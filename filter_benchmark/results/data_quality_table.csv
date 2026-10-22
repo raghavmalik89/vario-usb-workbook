@@ -1,0 +1,16 @@
+file,seq_gaps,seq_duplicates,out_of_order_t,duplicate_t,duration_s,P_frames,P_corrupt,P_sid1_rate_hz,P_sid1_p95_jitter_ms,T_frames,T_corrupt,T_sid1_rate_hz,T_sid1_p95_jitter_ms,E_frames,sidecar,prom_missing_for,verdict,I_frames,I_saturated,I_rate_hz,P_sid0_rate_hz,P_sid0_p95_jitter_ms,T_sid0_rate_hz,T_sid0_p95_jitter_ms,E_codes
+20261021_220205_t001_bench_60s.csv,0,0,0,0,60.0,2701,0,50.0,19.998,300,0,5.0,0.001,0,True,,clean,,,,,,,,
+20261021_232906_t001_bench_60s.csv,0,0,0,0,60.0,2701,0,50.0,19.997,300,0,5.0,0.0,0,True,,clean,,,,,,,,
+20261021_234824_t002_bench_60s.csv,1,0,0,0,60.02,2701,0,50.0,20.0,300,0,5.0,0.003,0,True,,usable with caveats (see report),12005.0,0.0,200.0,,,,,
+20261022_000337_t003_dual_60s.csv,0,0,0,3000,60.0,5401,0,50.0,20.0,600,0,5.0,0.0,0,True,,clean,,,,50.0,20.0,5.0,0.0,
+20261022_081549_t004_elevator_run1.csv,0,0,0,1253,25.06,2257,0,50.0,20.0,250,0,5.0,0.0,0,False,,EXCLUDED (no sidecar),,,,50.0,20.0,5.0,0.0,
+20261022_082342_t004_elevator_f14.csv,1,0,0,0,76.76,3455,0,50.0,20.0,384,0,5.0,0.002,0,True,,usable with caveats (see report),15352.0,0.0,200.0,,,,,
+20261022_084001_t004_step_drop.csv,1,0,0,0,25.47,1146,0,50.0,20.0,127,0,5.0,0.002,0,True,,usable with caveats (see report),5096.0,457.0,200.0,,,,,
+20261022_160010_t005_elevator_2x.csv,0,0,0,8843,176.84,15918,0,50.0,20.0,1768,0,5.0,0.0,0,True,,clean,,,,50.0,20.0,5.0,0.0,
+20261022_160426_t005_drop.csv,0,0,0,2734,54.66,4922,0,50.0,20.0,546,0,5.0,0.0,0,True,,clean,,,,50.0,20.0,5.0,0.0,
+20261022_160548_t005_toss.csv,0,0,0,2255,45.08,4058,1,50.0,20.0,452,0,5.0,0.002,1,True,,usable with caveats (see report),,,,50.0,20.0,5.0,0.002,code1x1
+20261022_160658_t005_ControledMove.csv,0,0,0,1997,39.92,3596,0,50.0,20.0,398,0,5.0,0.002,0,True,,clean,,,,50.0,20.0,5.0,0.002,
+20261022_162134_t005_benchstatic.csv,0,0,0,3000,60.0,5401,0,50.0,20.0,600,0,5.0,0.0,0,True,,clean,,,,50.0,20.0,5.0,0.0,
+20261022_163251_t006_benchstatic.csv,0,0,0,5999,59.99,10799,0,100.0,10.0,1200,0,10.0,0.0,0,True,,clean,,,,100.0,10.0,10.0,0.0,
+20261022_163450_t006_drop.csv,0,0,0,3500,35.0,6300,2,100.0,10.0,700,0,10.0,0.001,3,True,,usable with caveats (see report),,,,100.0,10.0,10.0,0.001,code1x3
+20261022_163603_t006_ControledMove.csv,0,0,0,4000,40.0,7201,0,100.0,10.0,800,0,10.0,0.002,0,True,,clean,,,,100.0,10.0,10.0,0.002,

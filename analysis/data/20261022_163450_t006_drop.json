@@ -1,0 +1,23 @@
+{
+  "label": "t006_drop",
+  "started_utc": "2026-10-22T08:34:52.117027+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261022_163450_t006_drop.csv",
+  "device": {
+    "firmware": "vario-bench-t006 0.6.0",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "osr=2048,p_hz=90,t_hz=10,sensors=2,imu=off,c_addr=0x77,c_status=missing"
+  },
+  "stats": {
+    "lines_written": 7003,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 3
+    },
+    "elapsed_s": 35.01
+  }
+}

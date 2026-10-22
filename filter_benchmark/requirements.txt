@@ -1,0 +1,6 @@
+# Runtime uses the Kimi Work managed Python (numpy/pandas/matplotlib bundled).
+# For a standalone venv:
+numpy
+pandas
+matplotlib
+pytest

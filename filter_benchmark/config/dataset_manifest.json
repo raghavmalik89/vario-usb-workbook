@@ -1,0 +1,544 @@
+{
+  "source_dir": "analysis/data",
+  "protocol": "docs/serial_protocol.md v1",
+  "timestamp_source": "per-frame t_us from esp_timer_get_time() at the MCU (physical sample time; USB receipt order not used)",
+  "reference_channels": {
+    "gps": "UNAVAILABLE \u2014 no GPS in any recording",
+    "reference_vario": "UNAVAILABLE \u2014 no reference vario output recorded",
+    "ground_truth_events": "derived only: 1-s-smoothed baro crossings (descriptive, NOT measured physical latency)"
+  },
+  "runs": [
+    {
+      "file": "20261021_220205_t001_bench_60s.csv",
+      "label": "220205_t001_bench_60s",
+      "session_type": "static_bench",
+      "rows": 3001,
+      "duration_s": 60.0,
+      "channels": {
+        "P": {
+          "frames": 2701,
+          "sids": [
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 49.995,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 300,
+          "sids": [
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t001 0.1.x",
+      "prom_sids": [
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261021_232906_t001_bench_60s.csv",
+      "label": "232906_t001_bench_60s",
+      "session_type": "static_bench",
+      "rows": 3001,
+      "duration_s": 60.0,
+      "channels": {
+        "P": {
+          "frames": 2701,
+          "sids": [
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 49.9925,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 300,
+          "sids": [
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t001 0.1.x",
+      "prom_sids": [
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261021_234824_t002_bench_60s.csv",
+      "label": "234824_t002_bench_60s",
+      "session_type": "static_bench",
+      "rows": 15006,
+      "duration_s": 60.02,
+      "channels": {
+        "I": {
+          "frames": 12005,
+          "median_dt_s": 0.005,
+          "rate_hz": 200.0,
+          "p95_jitter_s": 0.0
+        },
+        "P": {
+          "frames": 2701,
+          "sids": [
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 300,
+          "sids": [
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t002 0.2.0",
+      "prom_sids": [
+        1
+      ],
+      "sidecar": true,
+      "notes": []
+    },
+    {
+      "file": "20261022_000337_t003_dual_60s.csv",
+      "label": "000337_t003_dual_60s",
+      "session_type": "dual_static",
+      "rows": 6001,
+      "duration_s": 60.0,
+      "channels": {
+        "P": {
+          "frames": 5401,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 600,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t003 0.3.0",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_081549_t004_elevator_run1.csv",
+      "label": "081549_t004_elevator_run1",
+      "session_type": "elevator",
+      "rows": 2507,
+      "duration_s": 25.06,
+      "channels": {
+        "P": {
+          "frames": 2257,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 250,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": null,
+      "prom_sids": [],
+      "sidecar": false,
+      "notes": [
+        "NO SIDECAR \u2014 offline compensation impossible (PROM missing); run is analysis-excluded until patched",
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_082342_t004_elevator_f14.csv",
+      "label": "082342_t004_elevator_f14",
+      "session_type": "elevator",
+      "rows": 19191,
+      "duration_s": 76.76,
+      "channels": {
+        "I": {
+          "frames": 15352,
+          "median_dt_s": 0.005,
+          "rate_hz": 200.0,
+          "p95_jitter_s": 0.0
+        },
+        "P": {
+          "frames": 3455,
+          "sids": [
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 384,
+          "sids": [
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t002 0.2.2",
+      "prom_sids": [
+        1
+      ],
+      "sidecar": true,
+      "notes": []
+    },
+    {
+      "file": "20261022_084001_t004_step_drop.csv",
+      "label": "084001_t004_step_drop",
+      "session_type": "step_drop",
+      "rows": 6369,
+      "duration_s": 25.47,
+      "channels": {
+        "I": {
+          "frames": 5096,
+          "median_dt_s": 0.005,
+          "rate_hz": 200.0,
+          "p95_jitter_s": 0.0
+        },
+        "P": {
+          "frames": 1146,
+          "sids": [
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 127,
+          "sids": [
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t002 0.2.2",
+      "prom_sids": [
+        1
+      ],
+      "sidecar": true,
+      "notes": []
+    },
+    {
+      "file": "20261022_160010_t005_elevator_2x.csv",
+      "label": "160010_t005_elevator_2x",
+      "session_type": "elevator",
+      "rows": 17686,
+      "duration_s": 176.84,
+      "channels": {
+        "P": {
+          "frames": 15918,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 1768,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t005 0.5.3",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_160426_t005_drop.csv",
+      "label": "160426_t005_drop",
+      "session_type": "step_drop",
+      "rows": 5468,
+      "duration_s": 54.66,
+      "channels": {
+        "P": {
+          "frames": 4922,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 546,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t005 0.5.3",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_160548_t005_toss.csv",
+      "label": "160548_t005_toss",
+      "session_type": "toss_catch",
+      "rows": 4511,
+      "duration_s": 45.08,
+      "channels": {
+        "E": {
+          "frames": 1,
+          "sids": [
+            1
+          ]
+        },
+        "P": {
+          "frames": 4058,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 452,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t005 0.5.3",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_160658_t005_ControledMove.csv",
+      "label": "160658_t005_ControledMove",
+      "session_type": "controlled_move",
+      "rows": 3994,
+      "duration_s": 39.92,
+      "channels": {
+        "P": {
+          "frames": 3596,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 398,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t005 0.5.3",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_162134_t005_benchstatic.csv",
+      "label": "162134_t005_benchstatic",
+      "session_type": "static_bench",
+      "rows": 6001,
+      "duration_s": 60.0,
+      "channels": {
+        "P": {
+          "frames": 5401,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.02,
+          "rate_hz": 50.0,
+          "p95_jitter_s": 0.02
+        },
+        "T": {
+          "frames": 600,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t005 0.5.3",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_163251_t006_benchstatic.csv",
+      "label": "163251_t006_benchstatic",
+      "session_type": "static_bench",
+      "rows": 11999,
+      "duration_s": 59.99,
+      "channels": {
+        "P": {
+          "frames": 10799,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.01,
+          "rate_hz": 100.0,
+          "p95_jitter_s": 0.01
+        },
+        "T": {
+          "frames": 1200,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t006 0.6.0",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_163450_t006_drop.csv",
+      "label": "163450_t006_drop",
+      "session_type": "step_drop",
+      "rows": 7003,
+      "duration_s": 35.0,
+      "channels": {
+        "E": {
+          "frames": 3,
+          "sids": [
+            1
+          ]
+        },
+        "P": {
+          "frames": 6300,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.01,
+          "rate_hz": 100.0,
+          "p95_jitter_s": 0.01
+        },
+        "T": {
+          "frames": 700,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t006 0.6.0",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    },
+    {
+      "file": "20261022_163603_t006_ControledMove.csv",
+      "label": "163603_t006_ControledMove",
+      "session_type": "controlled_move",
+      "rows": 8001,
+      "duration_s": 40.0,
+      "channels": {
+        "P": {
+          "frames": 7201,
+          "sids": [
+            0,
+            1
+          ],
+          "median_dt_s": 0.01,
+          "rate_hz": 100.0,
+          "p95_jitter_s": 0.01
+        },
+        "T": {
+          "frames": 800,
+          "sids": [
+            0,
+            1
+          ]
+        }
+      },
+      "firmware": "vario-bench-t006 0.6.0",
+      "prom_sids": [
+        0,
+        1
+      ],
+      "sidecar": true,
+      "notes": [
+        "no IMU channel (baro-only run; fusion filters Group F are NOT evaluable on this recording)"
+      ]
+    }
+  ]
+}
