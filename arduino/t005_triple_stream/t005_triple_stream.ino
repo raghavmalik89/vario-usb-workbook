@@ -306,7 +306,7 @@ static void printLegend() {
 }
 
 static void emitHeader(bool full) {
-  Serial.printf("#H,vario-bench-t005,0.5.0\n");
+  Serial.printf("#H,vario-bench-t005,0.5.1\n");
   if (full) printLegend();
 }
 
@@ -365,9 +365,15 @@ static bool healthCheck() {
 
   // Bus C: probe 0x77 then 0x76 (clone #3's CSB state is unknown — it is
   // alone on its own bus, so either address is usable; we just report it).
+  // A fresh MS5611 may not ACK for a while after power-up (t000's scanner
+  // only works because scanning addr 1..126 spends ~hundreds of ms first),
+  // so retry each address once after a settle delay before giving up.
   uint8_t cAddr = 0;
-  for (uint8_t cand : {0x77, 0x76}) {
-    if (bbProbe(cand)) { cAddr = cand; break; }
+  for (int attempt = 0; attempt < 2 && !cAddr; attempt++) {
+    for (uint8_t cand : {0x77, 0x76}) {
+      if (bbProbe(cand)) { cAddr = cand; break; }
+    }
+    if (!cAddr) delay(150);
   }
   baros[2].addr = cAddr ? cAddr : 0x77;   // nominal for the error line
   if (cAddr) {
@@ -439,7 +445,13 @@ void setup() {
   Wire1.begin(BUSB_SDA, BUSB_SCL);
   Wire1.setClock(400000);
   Wire1.setTimeout(50);
-  // Bus C pins start released (INPUT_PULLUP) — bit-bang drives them per-op
+  // Bus C pins start released (INPUT_PULLUP) — bit-bang drives them per-op.
+
+  // Power/I2C settle before touching anything: a fresh MS5611 can ignore
+  // its first I2C transactions for a while after power-up (this is why the
+  // t000 scanner, which spends ~hundreds of ms scanning low addresses
+  // first, sees bus C fine). t005 used to probe within ms of boot.
+  delay(300);
 
   emitHeader(true);
 
