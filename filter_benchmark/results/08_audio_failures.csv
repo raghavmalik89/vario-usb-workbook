@@ -1,0 +1,11 @@
+filter,session,sid,kind,rate_hz,split,t_transient,max_abs_v_after,failure
+S1_RobustAdaptiveKF,20261022_160548_t005_toss,0,motion,45,validation,58.87,1.043,extreme output after rejected transient
+S3_AccelerationAwareKF,20261022_160548_t005_toss,0,motion,45,validation,58.87,5.131,extreme output after rejected transient
+C03_CV_tracker,20261022_160548_t005_toss,0,motion,45,validation,58.87,1.796,extreme output after rejected transient
+D01_Kalman_CV,20261022_160548_t005_toss,0,motion,45,validation,58.87,1.821,extreme output after rejected transient
+S3_AccelerationAwareKF,20261022_163450_t006_drop,0,motion,90,validation,78.67,16.226,extreme output after rejected transient
+S3_AccelerationAwareKF,20261022_163450_t006_drop,0,motion,90,validation,78.96,16.226,extreme output after rejected transient
+C03_CV_tracker,20261022_163450_t006_drop,0,motion,90,validation,78.67,2.936,extreme output after rejected transient
+C03_CV_tracker,20261022_163450_t006_drop,0,motion,90,validation,78.96,2.936,extreme output after rejected transient
+D01_Kalman_CV,20261022_163450_t006_drop,0,motion,90,validation,78.67,3.211,extreme output after rejected transient
+D01_Kalman_CV,20261022_163450_t006_drop,0,motion,90,validation,78.96,3.211,extreme output after rejected transient

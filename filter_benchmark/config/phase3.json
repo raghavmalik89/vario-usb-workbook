@@ -1,0 +1,35 @@
+{
+  "comment": "Task E Phase 3 — frozen candidate configurations. FREEZE RULE (spec §4): these configs are fixed BEFORE held-out evaluation; validation results must not be used to re-tune them. Provenance per knob: 'train' = chosen by Phase-2 training-split tuning; 'design' = architectural default (unvalidated hypothesis, labeled as such in the report); 'pdf' = research-PDF starting point.",
+  "audio_policy": {"lift_on": 0.20, "lift_off": 0.05, "hold_s": 0.0, "min_on_s": 0.0,
+                   "comment": "identical across ALL candidates; no extra hold"},
+  "architectures": {
+    "S1_RobustAdaptiveKF": {
+      "params": {"window_s": 1.0, "n_sigma": 2.5, "q": 0.3, "r": 0.035,
+                 "gate_sigma": 3.5, "q_gain": 2.0, "v_scale": 1.0},
+      "provenance": {"window_s,n_sigma": "Phase-2 A05 best (train)",
+                     "q,r": "Phase-2 D01 best (train)",
+                     "gate_sigma": "Phase-2 D06 best (train)",
+                     "q_gain,v_scale": "design default (hypothesis)"}
+    },
+    "S2_DualTimescale": {
+      "params": {"tau_fast_s": 0.35, "q_slow": 0.3, "r_slow": 0.035,
+                 "v_scale": 0.8, "exit_v": 0.15, "exit_hold_s": 0.6,
+                 "v_plaus_max": 8.0, "plaus_margin_m": 0.3},
+      "provenance": {"q_slow,r_slow": "Phase-2 D01 best (train)",
+                     "tau_fast_s": "design: fast-branch pole, faster than Phase-2 C01 best (train) on purpose",
+                     "v_scale,exit_v,exit_hold_s": "design (pdf-flavored thresholds)",
+                     "v_plaus_max,plaus_margin_m": "design: physical plausibility, 8 m/s vertical bound"}
+    },
+    "S3_AccelerationAwareKF": {
+      "params": {"q": 0.3, "r": 0.035, "gate_sigma": 3.5, "a_plaus_max": 6.0,
+                 "fault_sigma": 5.0, "fault_n": 8, "fault_r_mult": 25.0},
+      "provenance": {"q,r,gate_sigma": "Phase-2 train bests (D01/D06)",
+                     "a_plaus_max": "design: ~0.6 g, baro-only a-state sanity",
+                     "fault_sigma,fault_n,fault_r_mult": "design (hypothesis)"},
+      "imu": "NOT AVAILABLE in any capture (MPU6050 probed at health-check, never streamed). S3 evaluated barometer-only; no IMU advantage claimed."
+    }
+  },
+  "reference_baselines": ["B02_project_kalman", "C03_CV_tracker", "D01_Kalman_CV"],
+  "failure_threshold": {"post_transient_max_v": 1.0,
+                        "comment": "m/s; |v| above this within 2 s after a rejected transient is recorded as a FAILURE event (spec §5)"}
+}

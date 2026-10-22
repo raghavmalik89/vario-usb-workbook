@@ -68,9 +68,10 @@ def derive_events(t, alt):
     return merged, v_ref
 
 
-def run_filter_on_stream(name, overrides, st):
+def run_filter_on_stream(name, overrides, st, registry=None):
     """Replay one filter on one stream; return metrics dict."""
-    f = FILTERS[name](**overrides)
+    reg = registry or FILTERS
+    f = reg[name](**overrides)
     t, v = replay.replay(f, t=st["t"], z=st["alt"])
     row = dict(filter=name, config=f._config_repr(), session=st["session"],
                sid=st["sid"], kind=st["kind"], rate_hz=st["rate"],

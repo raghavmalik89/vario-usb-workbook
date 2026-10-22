@@ -1,0 +1,7 @@
+filter,cpu_us_per_sample_median,rel_to_D01
+S1_RobustAdaptiveKF,42.88,2.95
+S2_DualTimescale,16.57,1.14
+S3_AccelerationAwareKF,17.44,1.2
+B02_project_kalman,13.5,0.93
+C03_CV_tracker,6.61,0.45
+D01_Kalman_CV,14.55,1.0
