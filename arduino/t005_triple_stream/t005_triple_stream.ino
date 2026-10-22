@@ -292,7 +292,8 @@ static void printLegend() {
   Serial.printf("#,  #C,dev=a1,...,addr=0x69,...  (Bus A IMU — checked, not streamed)\n");
   Serial.printf("#,  #C,dev=b1,...,addr=0x77,...  (Bus B baro, sid=1)\n");
   Serial.printf("#,  #C,dev=c1,...,addr=0x??,...  (Bus C baro, sid=2 — addr PROBED)\n");
-  Serial.printf("#,  #C,health=ok,missing=0   <- stream starts ONLY if this says ok\n");
+  Serial.printf("#,  #C,health=ok (3 sids) or health=degraded (2 sids —\n");
+  Serial.printf("#,    the dead one is skipped, sensors= in #C says which)\n");
   Serial.printf("#,THEN: THREE #K lines, one per barometer (sid 0, 1, 2) — keep them.\n");
   Serial.printf("#,DATA FRAMES — three per tick, one from each sensor:\n");
   Serial.printf("#,  P,<seq>,<t_us>,<sid>,<d1>  raw pressure ADC 24-bit, sid 0/1/2\n");
@@ -306,7 +307,7 @@ static void printLegend() {
 }
 
 static void emitHeader(bool full) {
-  Serial.printf("#H,vario-bench-t005,0.5.1\n");
+  Serial.printf("#H,vario-bench-t005,0.5.2\n");
   if (full) printLegend();
 }
 
@@ -315,22 +316,30 @@ static void emitConfig() {
     Serial.printf("#C,status=fault_no_stream\n");
     return;
   }
+  int nOK = 0;
+  for (int i = 0; i < 3; i++) if (baros[i].ok) nOK++;
   for (int i = 0; i < 3; i++) {
+    if (!baros[i].ok) continue;
     Serial.printf("#K,%d,%u,%u,%u,%u,%u,%u\n", baros[i].sid,
                   baros[i].prom[1], baros[i].prom[2], baros[i].prom[3],
                   baros[i].prom[4], baros[i].prom[5], baros[i].prom[6]);
   }
-  Serial.printf("#C,osr=4096,p_hz=45,t_hz=5,sensors=3,imu=off,"
-                "c_addr=0x%02X\n", baros[2].addr);
+  Serial.printf("#C,osr=4096,p_hz=45,t_hz=5,sensors=%d,imu=off,"
+                "c_addr=0x%02X,c_status=%s\n", nOK, baros[2].addr,
+                baros[2].ok ? "ok" : "missing");
 }
 
 // ============================================================================
-// Health check — streaming requires ALL THREE barometers alive.
-// The MPU is checked for completeness (state of the bench) but not streamed.
+// Health check — streaming requires AT LEAST TWO barometers alive.
+// All three -> health=ok; two -> health=degraded (the missing sid is simply
+// absent from the stream; #C sensors= reports the truth). This keeps the
+// session productive if GY-63 #3 (bus C) stays dark — the spatial test
+// works with two units. The MPU is checked for completeness (state of the
+// bench) but not streamed and never blocks.
 // ============================================================================
 
 static bool healthCheck() {
-  int missing = 0;
+  int baroMissing = 0, otherMissing = 0;
 
   if (probeAck(Wire, ADDR_BARO_A)) {
     uint16_t p0 = 0xFFFF;
@@ -347,10 +356,10 @@ static bool healthCheck() {
     bool alive = (who == 0x68);
     Serial.printf("#C,dev=a1,type=mpu6050,addr=0x%02X,whoami=0x%02X,status=%s\n",
                   ADDR_MPU_A, who, alive ? "ok" : "bad_id");
-    if (!alive) missing++;   // not streamed — report but don't block
+    if (!alive) otherMissing++;   // not streamed — report but don't block
   } else {
     Serial.printf("#C,dev=a1,type=mpu6050,addr=0x%02X,status=missing\n", ADDR_MPU_A);
-    missing++;
+    otherMissing++;
   }
 
   if (probeAck(Wire1, ADDR_BARO_B)) {
@@ -389,11 +398,11 @@ static bool healthCheck() {
   }
 
   for (int i = 0; i < 3; i++) {
-    if (!baros[i].ok) missing++;
+    if (!baros[i].ok) baroMissing++;
   }
-  Serial.printf("#C,health=%s,missing=%d\n", (missing == 0) ? "ok" : "fail",
-                missing);
-  return baros[0].ok && baros[1].ok && baros[2].ok;
+  const char *hs = (baroMissing == 0) ? "ok" : (baroMissing == 1) ? "degraded" : "fail";
+  Serial.printf("#C,health=%s,missing=%d\n", hs, baroMissing + otherMissing);
+  return baroMissing <= 1;
 }
 
 // ============================================================================
@@ -403,6 +412,7 @@ static bool healthCheck() {
 static void startConversion(bool temp) {
   uint64_t t = nowUs();
   for (int i = 0; i < 3; i++) {
+    if (!baros[i].ok) continue;              // degraded mode: skip dead sid
     if (!convStart(baros[i], temp)) emitError(t, 1);
   }
   convertingTemp = temp;
@@ -413,6 +423,7 @@ static void startConversion(bool temp) {
 static void finishConversion() {
   uint64_t t = nowUs();
   for (int i = 0; i < 3; i++) {
+    if (!baros[i].ok) continue;              // degraded mode: skip dead sid
     uint32_t raw = 0;
     if (readADC24(baros[i], raw)) {
       Serial.printf("%c,%lu,%llu,%d,%lu\n", convertingTemp ? 'T' : 'P',
@@ -463,6 +474,7 @@ void setup() {
 
   bool okProm = true;
   for (int i = 0; i < 3; i++) {
+    if (!baros[i].ok) continue;              // degraded mode: skip dead sid
     if (!readProm(baros[i])) okProm = false;
   }
   baroOK = okProm;
