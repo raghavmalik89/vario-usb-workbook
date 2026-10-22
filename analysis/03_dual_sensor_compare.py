@@ -5,6 +5,7 @@
 For the two (or three) barometers in one run, measures:
   - per-sensor pressure noise (detrended RMS)
   - residual cross-correlation between sensors (shared vs independent noise)
+    as a full N×N matrix (R-1: spatial decorrelation is a per-PAIR question)
   - actual averaging gain vs the sqrt(N) ideal
   - any static offset between sensors
 
@@ -75,6 +76,19 @@ def main():
         cor = np.corrcoef(ref_d, d)[0, 1]
         cors.append(cor)
         print(f"  sid {s}: σ={d.std():6.2f} Pa  corr={cor:+.2f}  offset≈{offset:+.2f} Pa")
+
+    # full N×N correlation matrix — every pair aligned to the ref timeline
+    print("\nCorrelation matrix (detrended residuals, all pairs):")
+    print("          " + "".join(f"sid {s:^7}" for s in sids))
+    for si in sids:
+        ti, pi = series[si]
+        di = detrend(ref_t, np.interp(ref_t, ti, pi))
+        row = f"  sid {si}  "
+        for sj in sids:
+            tj, pj = series[sj]
+            dj = detrend(ref_t, np.interp(ref_t, tj, pj))
+            row += f"   {np.corrcoef(di, dj)[0, 1]:+.2f}   "
+        print(row)
 
     # averaging gain: mean of residuals
     stacked = np.vstack([residuals[s] for s in sids])

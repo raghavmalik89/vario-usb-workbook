@@ -14,11 +14,26 @@ hard lesson baked into this design):
   - per motion event (auto-detected |v| > 0.3 regions):
       onset latency  = est |v| first > 0.3  minus  event start
       release latency = est |v| last  > 0.3  minus  event end
+  - R-2 release metrics (research T-002, per event):
+      rel@lift-off = est |v| last > +0.05 m/s  minus  event end
+                     (the lift-off threshold — the number that matters for
+                     "how long after leaving lift does the vario shut up")
+      fall 90->10  = time for est |v| to decay from 90% to 10% of its
+                     in-window peak after the peak (ring-down sharpness)
+  - per-signal-strength table: events binned by reference peak
+    (weak <0.6 / mid 0.6-1.5 / strong >=1.5 m/s) — research requires
+    onset/release to be reported PER STRENGTH, not just overall medians
   - overshoot: max |v| during event vs reference (smoothed-baru v)
 
 Usage:
     python 04_filter_replay.py '*elevator*' --sid=1
     python 04_filter_replay.py '*step_drop*' --sid=1
+    python 04_filter_replay.py '*t005_elevator*' --sid=0 --off=0.05
+
+Caveat (from T-008, still true): onset/release are measured against the
+1-s-smoothed reference crossings, so fast estimators can show negative
+onset on sharp events. Compare like with like; trust the RELATIVE ordering
+between estimators on the same events, not the absolute sign.
 """
 import sys
 
@@ -108,38 +123,110 @@ def smooth_v(t, alt, win_s=1.0):
     return np.gradient(alt_s, t), alt_s
 
 
-def evaluate(t, v_est, events, rest_mask, label):
-    """Event-relative metrics for one estimator's climb-rate series."""
+def evaluate(t, v_est, events, rest_mask, label, v_ref=None, rel_off=0.05):
+    """Event-relative metrics for one estimator's climb-rate series.
+
+    Per event (see module docstring for definitions):
+      onset / release at the 0.3 strong-motion threshold (existing T-008),
+      rel_off at the lift-off threshold (R-2), fall 90->10 ring-down time
+      (R-2).  Everything is stored per-event so main() can bin by the
+      reference peak (signal strength).
+    """
     v_rms = np.sqrt(np.mean(v_est[rest_mask] ** 2)) if rest_mask.any() else float("nan")
-    lats, rels, peaks = [], [], []
+    per_event = []
     for (e0, e1) in events:
+        # onset / release at the 0.3 "strong motion" threshold (existing window)
         i0 = np.searchsorted(t, e0 - 3.0)
         i1 = np.searchsorted(t, e1 + 1)
         win = np.abs(v_est[i0:i1]) > 0.3
-        if not win.any():
-            lats.append(np.nan)
-            rels.append(np.nan)
-        else:
+        onset = rel = float("nan")
+        if win.any():
             j = np.where(win)[0]
-            lats.append(t[i0 + j[0]] - e0)
-            rels.append(t[i0 + j[-1]] - e1)
+            onset = t[i0 + j[0]] - e0
+            rel = t[i0 + j[-1]] - e1
+        # R-2 release window: event end + 2 s of ring-down, lift-off threshold
+        w0 = np.searchsorted(t, e0)
+        w1 = np.searchsorted(t, e1 + 2.0)
+        tw = t[w0:w1]
+        vw = v_est[w0:w1]
+        rel5 = fall = float("nan")
+        if len(vw):
+            above = np.where(np.abs(vw) > rel_off)[0]
+            if len(above):
+                rel5 = tw[above[-1]] - e1
+            ipk = int(np.argmax(np.abs(vw)))
+            peak = abs(vw[ipk])
+            if peak >= 0.1:
+                tail = np.abs(vw[ipk:])
+                b90 = np.where(tail <= 0.9 * peak)[0]
+                b10 = np.where(tail <= 0.1 * peak)[0]
+                if len(b90) and len(b10):
+                    fall = tw[ipk + b10[0]] - tw[ipk + b90[0]]
         ev = (t >= e0) & (t <= e1)
-        peaks.append(np.abs(v_est[ev]).max() if ev.any() else np.nan)
-    def med(x):
-        x = [v for v in x if v == v]
-        return np.median(x) if x else float("nan")
+        pk_est = np.abs(v_est[ev]).max() if ev.any() else float("nan")
+        pk_ref = float("nan")
+        if v_ref is not None and ev.any():
+            pk_ref = np.abs(v_ref[ev]).max()
+        per_event.append(dict(t0=e0, t1=e1, peak_ref=pk_ref, onset=onset,
+                              rel=rel, rel_off=rel5, fall=fall, peak=pk_est))
+
+    def med(key):
+        xs = [p[key] for p in per_event if p[key] == p[key]]
+        return np.median(xs) if xs else float("nan")
+
+    def ms(v):
+        return f"{v * 1000:6.0f}" if v == v else "   nan"
+
     print(f"  {label:<26} rest {v_rms:.3f} m/s RMS | "
-          f"onset {med(lats)*1000 if med(lats)==med(lats) else float('nan'):6.0f} ms | "
-          f"release {med(rels)*1000 if med(rels)==med(rels) else float('nan'):6.0f} ms | "
-          f"peak {med(peaks):.2f} m/s")
-    return dict(label=label, v=v_est, v_rms=v_rms, lats=lats, rels=rels, peaks=peaks)
+          f"onset {ms(med('onset'))} ms | release {ms(med('rel'))} ms | "
+          f"rel@0.05 {ms(med('rel_off'))} ms | fall90-10 {ms(med('fall'))} ms | "
+          f"peak {med('peak'):.2f} m/s")
+    return dict(label=label, v=v_est, v_rms=v_rms, per_event=per_event)
+
+
+STRENGTH_BINS = [(0.6, "weak (<0.6)"), (1.5, "mid (0.6-1.5)"),
+                 (float("inf"), "strong (>=1.5)")]
+
+
+def strength_bin(peak):
+    if peak != peak:
+        return None
+    for lim, name in STRENGTH_BINS:
+        if peak < lim:
+            return name
+    return None
+
+
+def print_strength_table(results):
+    """Onset / rel@lift-off / fall per signal strength (research requirement).
+
+    One row per estimator, columns per metric, cells ordered
+    weak / mid / strong.
+    """
+    print("\nPer signal strength (events binned by reference peak), ms:")
+    print(f"    {'estimator':<26} | {'metric':<12} | "
+          f"{'weak (<0.6)':>12} | {'mid (0.6-1.5)':>12} | {'strong (>=1.5)':>12}")
+    for r in results:
+        first = True
+        for key, title in (("onset", "onset"), ("rel_off", "rel@0.05"),
+                           ("fall", "fall90-10")):
+            cells = []
+            for _, bname in STRENGTH_BINS:
+                xs = [p[key] for p in r["per_event"]
+                      if strength_bin(p["peak_ref"]) == bname and p[key] == p[key]]
+                cells.append(f"{np.median(xs) * 1000:12.0f}" if xs else f"{'nan':>12}")
+            print(f"    {(r['label'] if first else ''):<26} | {title:<12} | "
+                  + " | ".join(cells))
+            first = False
 
 
 def main():
     pattern = sys.argv[1] if len(sys.argv) > 1 else "*.csv"
     sid = int(next((a.split("=")[1] for a in sys.argv if a.startswith("--sid=")), 0))
+    rel_off = float(next((a.split("=")[1] for a in sys.argv if a.startswith("--off=")),
+                         0.05))
     csv_path = find_run(pattern)
-    print(f"Run: {csv_path.name}  sid={sid}")
+    print(f"Run: {csv_path.name}  sid={sid}  lift-off threshold={rel_off} m/s")
     df, meta = load_run(csv_path)
     t, p, _ = pressure_series(df, meta, sid)
     p0 = p[: max(int(10 / np.median(np.diff(t))), 100)].mean() if t[-1] > 10 else p.mean()
@@ -158,8 +245,10 @@ def main():
     print("Estimator comparison on identical data:")
     _, v_a = lpf_derivative(tu, altu, cutoff_hz=0.5)
     h_b, v_b = cv_kalman(tu, altu)
-    results = [evaluate(tu, v_a, events, rest_mask, "A) LPF 0.5Hz + derivative")]
-    results.append(evaluate(tu, v_b, events, rest_mask, "B) CV-Kalman baro-only"))
+    results = [evaluate(tu, v_a, events, rest_mask, "A) LPF 0.5Hz + derivative",
+                        v_ref=v_ref, rel_off=rel_off)]
+    results.append(evaluate(tu, v_b, events, rest_mask, "B) CV-Kalman baro-only",
+                            v_ref=v_ref, rel_off=rel_off))
 
     u = None
     imu = df[df.type == "I"].dropna(subset=["ax"])
@@ -176,9 +265,12 @@ def main():
         u = (a_raw - a_g) * G_STD / 16384.0
         print(f"IMU vertical axis: {vaxis} (rest {a_g:.0f} LSB = {a_g/16384:.3f} g)")
         h_c, v_c = cv_kalman(tu, altu, u=u)
-        results.append(evaluate(tu, v_c, events, rest_mask, "C) Kalman + accel"))
+        results.append(evaluate(tu, v_c, events, rest_mask, "C) Kalman + accel",
+                                v_ref=v_ref, rel_off=rel_off))
     else:
         print("no IMU in run — estimator C skipped")
+
+    print_strength_table(results)
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
     fig.suptitle(f"Estimator replay — {run_name(csv_path)} (sid {sid})")

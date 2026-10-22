@@ -1,5 +1,13 @@
 # firmware/ — ESP32-S3 test-rig firmware
 
+> **STATUS (2026-10-22):** the plan below is historical — actual firmware
+> lives in `../arduino/` and speaks protocol v1: `i2c_scan_test` (T-000),
+> `t001_baro_stream` 0.1.3, `t002_baro_imu_stream` 0.2.2,
+> `t003_dual_baro_stream` 0.3.1, `t005_triple_stream` 0.5.0 (R-1 3-sensor
+> set). Inventory with roles: `../docs/HANDOVER.md` §3.
+> **Test numbering:** ours are T-000…; research-PDF-derived tests are
+> R-1…R-5 (collision warning: `../docs/HANDOVER.md` §10).
+
 Not written yet. When it is, it must speak **serial protocol v1** exactly:
 see `../docs/serial_protocol.md`. The capture script and all analysis assume it.
 
