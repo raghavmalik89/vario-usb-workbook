@@ -1,0 +1,21 @@
+{
+  "label": "t004_step_drop",
+  "started_utc": "2026-10-22T00:40:03.617877+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261022_084001_t004_elevator_f14.csv",
+  "device": {
+    "firmware": "vario-bench-t002 0.2.2",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "osr=4096,p_hz=45,t_hz=5,imu=on,i_hz=200,dlpf=44hz,accel_fs=2g,gyro_fs=250dps"
+  },
+  "stats": {
+    "lines_written": 6369,
+    "bad_lines": 1,
+    "seq_drops": 1,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 25.47
+  },
+  "note": "Renamed after capture: the t004_elevator_f14 label was reused for the drop-onto-cloth step test. True content: sharp ~1 m drops onto cloth, 25.5 s."
+}

@@ -1,0 +1,6 @@
+# Python artifacts
+__pycache__/
+*.pyc
+
+# USB_C_Instant_Vario is its own git repository — keep it out of this one
+USB_C_Instant_Vario/

@@ -1,0 +1,7 @@
+#C,dev=a0,type=ms5611,addr=0x76,prom0=0x0878,status=ok
+#C,dev=a1,type=mpu6050,addr=0x69,whoami=0x68,status=ok
+#C,dev=b1,type=ms5611,addr=0x77,prom0=0x0884,status=ok
+#C,health=ok,missing=0
+#K,0,47752,48033,29037,26148,32806,27273
+#K,1,53519,53000,33254,30158,31701,28056
+#C,osr=4096,p_hz=45,t_hz=5,sensors=2,imu=off

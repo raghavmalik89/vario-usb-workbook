@@ -1,0 +1,20 @@
+{
+  "label": "t001_bench_60s",
+  "started_utc": "2026-10-21T15:29:08.340560+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261021_232906_t001_bench_60s.csv",
+  "stats": {
+    "lines_written": 3001,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 60.03
+  },
+  "device": {
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "firmware": "vario-bench-t001 0.1.x",
+    "note": "#H/#K/#C meta lost again \u2014 3.5 s-delay firmware not flashed yet. PROM patched from serial paste (same physical board, factory constant)."
+  }
+}

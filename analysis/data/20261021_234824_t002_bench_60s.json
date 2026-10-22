@@ -1,0 +1,20 @@
+{
+  "label": "t002_bench_60s",
+  "started_utc": "2026-10-21T15:48:26.083075+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261021_234824_t002_bench_60s.csv",
+  "stats": {
+    "lines_written": 15006,
+    "bad_lines": 0,
+    "seq_drops": 1,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 60.0
+  },
+  "device": {
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "firmware": "vario-bench-t002 0.2.0",
+    "note": "#H/#K/#C lost: board was already running when capture opened the port (CDC open does not reset S3). PROM patched from serial paste. Firmware gained meta-on-attach after this."
+  }
+}
