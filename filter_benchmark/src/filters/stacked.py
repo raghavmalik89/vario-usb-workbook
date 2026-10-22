@@ -262,8 +262,240 @@ class S3AccelerationAwareKF(Filter):
                 f"fault_n={self.fault_n},fault_r_mult={self.fault_r_mult}")
 
 
+class S1PPersistenceKF(S1RobustBaroAdaptiveKF):
+    """S1 + corrected persistence latch (Phase 4 WP-B).
+
+    Phase 3 finding: S2's persistence floor (w >= 0.6 toward the fast branch)
+    kept a ringing fast branch authoritative after motion ended -> audio
+    stayed ON past event_end + 8 s on 57% of events. Corrected design:
+      - the latch NEVER injects magnitude into v; it only modulates the
+        process noise (responsiveness): latched -> q_eff stays elevated so
+        the estimator tracks; unlatched -> rest q.
+      - rapid exit: |v| < exit_v sustained for exit_hold_s releases the
+        latch; exit_hold_s is SHORT (0.2 s) so post-event decay is the KF's
+        own natural dynamics and audio exits as soon as v < lift_off.
+    All Phase 3 S1 behaviour at rest is unchanged (latch only engages under
+    motion)."""
+
+    name = "S1P_PersistenceKF"
+
+    def __init__(self, window_s: float = 1.0, n_sigma: float = 2.5,
+                 q: float = 0.3, r: float = 0.035, gate_sigma: float = 3.5,
+                 q_gain: float = 2.0, v_scale: float = 1.0,
+                 exit_v: float = 0.12, exit_hold_s: float = 0.2):
+        super().__init__(window_s=window_s, n_sigma=n_sigma, q=q, r=r,
+                         gate_sigma=gate_sigma, q_gain=q_gain,
+                         v_scale=v_scale)
+        self.exit_v = float(exit_v)
+        self.exit_hold_s = float(exit_hold_s)
+
+    def _init_state(self):
+        super()._init_state()
+        self._latched = False
+        self._below_since = None
+
+    def _on_update(self, t, z, dt):
+        v = super()._on_update(t, z, dt)
+        # persistence latch on the CLEAN estimate (no magnitude injection)
+        if not self._latched and abs(v) > self.v_scale:
+            self._latched = True
+        if self._latched:
+            if abs(v) < self.exit_v:
+                if self._below_since is None:
+                    self._below_since = t
+                if t - self._below_since >= self.exit_hold_s:
+                    self._latched = False
+                    self._below_since = None
+            else:
+                self._below_since = None
+        if self._latched:
+            # stay responsive while motion lasts
+            self._q_eff = max(self._q_eff, self.q * 2.0)
+        return v
+
+    def _config_repr(self):
+        return (super()._config_repr()
+                + f",exit_v={self.exit_v},exit_hold_s={self.exit_hold_s}")
+
+
+class S4FastSlowGated(Filter):
+    """Corrected fast/slow dual-timescale estimator (Phase 4 WP-B).
+
+    Phase 3 S2 defects and their fixes (each explicitly testable):
+      D1  w floored at 0.6 toward the fast branch while latched -> ringing
+          fast branch dominated the blend AFTER motion ended (57% censored
+          beep-offs).  FIX: w_floor lowered to 0.3 AND sign-disagreement
+          rule: if sign(vf) != sign(vs) and |vs| < exit_v the blend follows
+          the slow branch (w = 0) — the slow branch owns the exit.
+      D2  exit_hold_s 0.6 s kept the latch hot long after decay.
+          FIX: exit_hold_s 0.25 s, exit_v 0.12.
+      D3  (root cause, found by Phase 4 debug) plausibility pre-clean
+          REPLACED deviating samples with the prediction. Under sustained
+          real acceleration (drop landing) the fast branch's prediction
+          drifts > max_dev from reality; replacement then blinds the branch
+          permanently (it never sees the truth again) and it freezes at a
+          wrong (h, v) — the frozen velocity sat above +0.2 m/s and held
+          the audio ON: S2's 55/97 censored beep-offs, worst in drop
+          sessions.  FIX: SATURATE, don't replace —
+          zc = h_pred + clamp(z - h_pred, +/-max_dev). An isolated spike is
+          still neutralised (clamped to a 0.46 m nudge) while sustained real
+          motion leaks through at the bounded rate, so the branch re-converges
+          to truth instead of freezing.
+    Everything else is S2's proven structure: physical plausibility
+    pre-clean, fast AlphaBeta detection, slow CV-Kalman stabiliser."""
+
+    name = "S4_FastSlowGated"
+
+    def __init__(self, tau_fast_s: float = 0.35, q_slow: float = 0.3,
+                 r_slow: float = 0.035, v_scale: float = 0.8,
+                 exit_v: float = 0.12, exit_hold_s: float = 0.25,
+                 w_floor: float = 0.3, v_plaus_max: float = 8.0,
+                 plaus_margin_m: float = 0.3):
+        self.tau_fast_s = float(tau_fast_s)
+        self.q_slow = float(q_slow)
+        self.r_slow = float(r_slow)
+        self.v_scale = float(v_scale)
+        self.exit_v = float(exit_v)
+        self.exit_hold_s = float(exit_hold_s)
+        self.w_floor = float(w_floor)
+        self.v_plaus_max = float(v_plaus_max)
+        self.plaus_margin_m = float(plaus_margin_m)
+        super().__init__()
+
+    def _init_state(self):
+        self._h = 0.0
+        self._fast = C01AlphaBeta(tau_s=self.tau_fast_s)
+        self._slow = D01KalmanCV(q=self.q_slow, r=self.r_slow)
+        self._fast_hold = False
+        self._below_since = None
+        self.n_rejected = 0
+
+    def _on_first(self, t, z):
+        self._fast.update(float(z), t)
+        self._slow.update(float(z), t)
+        self._h = float(z)
+        self._v = 0.0
+
+    def _on_update(self, t, z, dt):
+        h_pred = self._fast.get_altitude() + self._fast.get_estimate() * dt
+        max_dev = self.v_plaus_max * dt + self.plaus_margin_m
+        dev = z - h_pred
+        if abs(dev) > max_dev:
+            self.n_rejected += 1
+            # SATURATE (fix D3): bound the correction, keep the direction —
+            # never replace with the prediction (that blinds the branch)
+            zc = h_pred + float(np.sign(dev)) * max_dev
+        else:
+            zc = float(z)
+        vf = self._fast.update(float(zc), t)
+        vs = self._slow.update(float(zc), t)
+        if not self._fast_hold and abs(vf) > self.v_scale:
+            self._fast_hold = True          # strong motion: fast path latches
+        if self._fast_hold:
+            if abs(vf) < self.exit_v:
+                if self._below_since is None:
+                    self._below_since = t
+                if t - self._below_since >= self.exit_hold_s:
+                    self._fast_hold = False
+                    self._below_since = None
+            else:
+                self._below_since = None
+        w = min(abs(vf) / self.v_scale, 1.0)
+        # corrected persistence: lower floor + slow branch owns the exit
+        if self._fast_hold:
+            if (np.sign(vf) != np.sign(vs) and abs(vs) < self.exit_v):
+                w = 0.0
+            else:
+                w = max(w, self.w_floor)
+        self._h = self._slow.get_altitude()
+        self._v = (1.0 - w) * vs + w * vf
+        return self._v
+
+    def _config_repr(self):
+        return (f"tau_fast_s={self.tau_fast_s},q_slow={self.q_slow},"
+                f"r_slow={self.r_slow},v_scale={self.v_scale},"
+                f"exit_v={self.exit_v},exit_hold_s={self.exit_hold_s},"
+                f"w_floor={self.w_floor},v_plaus_max={self.v_plaus_max},"
+                f"plaus_margin_m={self.plaus_margin_m}")
+
+
+class S5LightGateKF(Filter):
+    """Constant-time robust CV Kalman (Phase 4 WP-B 'more efficient outlier
+    handling'). S1's Hampel median window is O(window) per sample; S5 replaces
+    it with two constant-time guards:
+      - physical plausibility pre-clean (prediction-deviation bound), and
+      - the KF's own innovation gate (rejection = prediction only).
+    Motion-adaptive q as in S1. Target: S1-class robustness at S2-class CPU
+    cost (S1 measured 42.9 us/update vs D01 14.6 us in Phase 3)."""
+
+    name = "S5_LightGateKF"
+
+    def __init__(self, q: float = 0.3, r: float = 0.035,
+                 gate_sigma: float = 3.5, q_gain: float = 2.0,
+                 v_scale: float = 1.0, v_plaus_max: float = 8.0,
+                 plaus_margin_m: float = 0.3):
+        self.q = float(q)
+        self.r = float(r)
+        self.gate_sigma = float(gate_sigma)
+        self.q_gain = float(q_gain)
+        self.v_scale = float(v_scale)
+        self.v_plaus_max = float(v_plaus_max)
+        self.plaus_margin_m = float(plaus_margin_m)
+        super().__init__()
+
+    def _init_state(self):
+        self._h = 0.0
+        self._x = None
+        self._P = None
+        self._q_eff = self.q
+        self.n_gated = 0
+        self.n_rejected = 0
+
+    def _on_first(self, t, z):
+        self._x = np.array([float(z), 0.0])
+        self._P = np.diag([1.0, 1.0])
+        self._h = float(z)
+        self._v = 0.0
+
+    def _on_update(self, t, z, dt):
+        F, H, Q, r = cv_model(dt, self._q_eff, self.r)
+        xp = F @ self._x
+        Pp = F @ self._P @ F.T + Q
+        # constant-time plausibility pre-clean (no window state at all):
+        # SATURATE, don't replace (the S2-freeze trap: replacement blinds the
+        # estimator under sustained real acceleration)
+        max_dev = self.v_plaus_max * dt + self.plaus_margin_m
+        dev = z - float(xp[0])
+        if abs(dev) > max_dev:
+            self.n_rejected += 1
+            z = float(xp[0]) + float(np.sign(dev)) * max_dev
+        y = float(z - (H @ xp)[0])
+        S = float(Pp[0, 0] + r)
+        if abs(y) > self.gate_sigma * np.sqrt(S):
+            self.n_gated += 1
+            self._x = xp
+            self._P = Pp
+        else:
+            K = (Pp @ H.T / S).ravel()
+            self._x = xp + K * y
+            self._P = (np.eye(2) - np.outer(K, H)) @ Pp
+        self._h, self._v = float(self._x[0]), float(self._x[1])
+        self._q_eff = self.q * (1.0 + self.q_gain *
+                                min(abs(self._v) / self.v_scale, 3.0))
+        return self._v
+
+    def _config_repr(self):
+        return (f"q={self.q},r={self.r},gate_sigma={self.gate_sigma},"
+                f"q_gain={self.q_gain},v_scale={self.v_scale},"
+                f"v_plaus_max={self.v_plaus_max},"
+                f"plaus_margin_m={self.plaus_margin_m}")
+
+
 STACKED = {
     "S1_RobustAdaptiveKF": S1RobustBaroAdaptiveKF,
     "S2_DualTimescale": S2DualTimescale,
     "S3_AccelerationAwareKF": S3AccelerationAwareKF,
+    "S1P_PersistenceKF": S1PPersistenceKF,
+    "S4_FastSlowGated": S4FastSlowGated,
+    "S5_LightGateKF": S5LightGateKF,
 }

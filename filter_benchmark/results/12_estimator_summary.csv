@@ -1,0 +1,7 @@
+filter,static_rest_rms_training,static_rest_rms_validation,onset_proxy_training,onset_proxy_validation,release_proxy_training,release_proxy_validation
+C03_CV_tracker,0.0477,nan,-0.0175,1.29,3.695,2.18
+D01_Kalman_CV,0.096,nan,-0.14,-2.35,3.675,2.11
+S1_RobustAdaptiveKF,0.0448,nan,-0.9075,0.14,5.5638,4.95
+S1P_PersistenceKF,0.0449,nan,-0.9075,0.14,5.525,1.9
+S4_FastSlowGated,0.0848,nan,-0.06,0.04,4.22,1.425
+S5_LightGateKF,0.0455,nan,0.0125,0.12,4.0,4.23

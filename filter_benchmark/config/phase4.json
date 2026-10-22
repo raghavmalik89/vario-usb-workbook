@@ -1,0 +1,231 @@
+{
+  "comment": "Task E Phase 4 \u2014 frozen configurations. FREEZE RULE (same as Phase 3): estimator configs and the COMMON audio policy are fixed BEFORE held-out evaluation; validation results must not re-tune them. WP-B tuning uses TRAINING data only; the per-candidate tuned audio policies chosen on training are recorded in 'tuned_policies' and are themselves frozen before validation evaluation. Provenance: 'train' = chosen on training split; 'design' = architectural default/hypothesis; 'phase3' = frozen Phase-3 config, unchanged.",
+  "common_audio_policy": {
+    "lift_on": 0.2,
+    "lift_off": 0.05,
+    "hold_s": 0.0,
+    "min_on_s": 0.0,
+    "max_on_s": 0.0,
+    "fault_veto": false,
+    "comment": "identical across ALL candidates for the common-policy evaluation; Phase 3 policy preserved exactly"
+  },
+  "phase4_audio_baseline": {
+    "lift_on": 0.2,
+    "lift_off": 0.05,
+    "hold_s": 0.0,
+    "min_on_s": 0.0,
+    "max_on_s": 10.0,
+    "fault_veto": true,
+    "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+  },
+  "audio_policy_search_space": {
+    "lift_on": [
+      0.15,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "lift_off": [
+      0.03,
+      0.05,
+      0.08,
+      0.1
+    ],
+    "hold_s": [
+      0.0,
+      0.2,
+      0.4
+    ],
+    "min_on_s": [
+      0.0,
+      0.15
+    ],
+    "selection_rule": "TRAINING split only: minimize false ON/hour on training statics subject to missed-lift rate <= common-policy level AND median lift on-delay <= common-policy + 0.5 s AND median lift exit-delay <= 8 s (uncensored). Sink 'misses' are excluded from the constraint: lift-only audio does not beep sink by design.",
+    "comment": "defined BEFORE tuning; script 13 implements it verbatim"
+  },
+  "estimators": {
+    "C03_CV_tracker": {
+      "params": {},
+      "role": "reference (Phase 3 frozen defaults)"
+    },
+    "D01_Kalman_CV": {
+      "params": {},
+      "role": "reference (Phase 3 frozen defaults)"
+    },
+    "S1_RobustAdaptiveKF": {
+      "params": {
+        "window_s": 1.0,
+        "n_sigma": 2.5,
+        "q": 0.3,
+        "r": 0.035,
+        "gate_sigma": 3.5,
+        "q_gain": 2.0,
+        "v_scale": 1.0
+      },
+      "role": "reference (Phase 3 frozen config)"
+    },
+    "S1P_PersistenceKF": {
+      "params": {
+        "window_s": 1.0,
+        "n_sigma": 2.5,
+        "q": 0.3,
+        "r": 0.035,
+        "gate_sigma": 3.5,
+        "q_gain": 2.0,
+        "v_scale": 0.8,
+        "exit_v": 0.12,
+        "exit_hold_s": 0.2
+      },
+      "provenance": {
+        "window_s..v_scale": "S1 frozen config (phase3), v_scale design 0.8 (latch engages a touch earlier)",
+        "exit_v,exit_hold_s": "design: rapid exit, no magnitude injection (fixes S2 freeze + censoring defects)"
+      },
+      "role": "candidate"
+    },
+    "S4_FastSlowGated": {
+      "params": {
+        "tau_fast_s": 0.35,
+        "q_slow": 0.3,
+        "r_slow": 0.035,
+        "v_scale": 0.8,
+        "exit_v": 0.12,
+        "exit_hold_s": 0.25,
+        "w_floor": 0.3,
+        "v_plaus_max": 8.0,
+        "plaus_margin_m": 0.3
+      },
+      "provenance": {
+        "tau_fast_s,q_slow,r_slow": "S2 frozen config (phase3)",
+        "exit_v,exit_hold_s,w_floor": "design fixes D1/D2 (WP-A)",
+        "v_plaus_max,plaus_margin_m": "SATURATION not replacement \u2014 fix D3 freeze trap (root cause of S2's 55/97 censored beep-offs, measured in results/11_s2_censoring.csv)"
+      },
+      "role": "candidate"
+    },
+    "S5_LightGateKF": {
+      "params": {
+        "q": 0.3,
+        "r": 0.035,
+        "gate_sigma": 3.5,
+        "q_gain": 2.0,
+        "v_scale": 1.0,
+        "v_plaus_max": 8.0,
+        "plaus_margin_m": 0.3
+      },
+      "provenance": {
+        "q,r,gate_sigma,q_gain,v_scale": "S1 frozen values (phase3)",
+        "v_plaus_max,plaus_margin_m": "SATURATION not replacement (fix D3); constant-time, no median window \u2014 CPU target S2-class"
+      },
+      "role": "candidate"
+    }
+  },
+  "reference_defects_retained": {
+    "S2_DualTimescale": "freeze trap (replacement pre-clean) + persistence floor: 31 censored events in corrected accounting; retained as the defect reference, NOT re-tuned (Phase 3 freeze)",
+    "S3_AccelerationAwareKF": "baro-only a-state excites velocity: ~13k false ON/hr on statics, 16.2 m/s post-transient; retained as recorded, NOT re-tuned"
+  },
+  "safety_mechanisms": {
+    "fault_detector": {
+      "v_plaus_max": 8.0,
+      "margin_m": 0.3,
+      "trip_n": 5,
+      "clear_n": 5,
+      "comment": "estimator-agnostic; streak detector vs the estimator's own prediction; results/11_stress.csv fault_veto_generic_detector"
+    },
+    "max_on_s": 10.0
+  },
+  "failure_threshold": {
+    "post_transient_max_v": 1.0
+  },
+  "tuned_policies": {
+    "C03_CV_tracker": {
+      "lift_on": 0.2,
+      "lift_off": 0.03,
+      "hold_s": 0.0,
+      "min_on_s": 0.0,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    },
+    "D01_Kalman_CV": {
+      "lift_on": 0.2,
+      "lift_off": 0.03,
+      "hold_s": 0.0,
+      "min_on_s": 0.15,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    },
+    "S1_RobustAdaptiveKF": {
+      "lift_on": 0.15,
+      "lift_off": 0.03,
+      "hold_s": 0.0,
+      "min_on_s": 0.15,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    },
+    "S1P_PersistenceKF": {
+      "lift_on": 0.15,
+      "lift_off": 0.03,
+      "hold_s": 0.0,
+      "min_on_s": 0.15,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    },
+    "S4_FastSlowGated": {
+      "lift_on": 0.15,
+      "lift_off": 0.03,
+      "hold_s": 0.2,
+      "min_on_s": 0.0,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    },
+    "S5_LightGateKF": {
+      "lift_on": 0.15,
+      "lift_off": 0.03,
+      "hold_s": 0.0,
+      "min_on_s": 0.15,
+      "safety": {
+        "lift_on": 0.2,
+        "lift_off": 0.05,
+        "hold_s": 0.0,
+        "min_on_s": 0.0,
+        "max_on_s": 10.0,
+        "fault_veto": true,
+        "comment": "WP-A outcome: max_on valve (10 s) + generic fault-detector veto are the recommended Phase-4 audio safety baseline; measured in results/11_stress.csv"
+      }
+    }
+  },
+  "tuned_policies_comment": "chosen on the TRAINING split by the fixed selection rule; frozen before validation evaluation; validation numbers in results/13_policy_comparison.csv were NOT used for selection"
+}

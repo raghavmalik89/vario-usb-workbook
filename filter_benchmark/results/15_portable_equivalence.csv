@@ -1,0 +1,13 @@
+build,vector,max_abs_dv,tol,state_mismatch,fault_mismatch,passed
+double,v1_statics_45hz,2.7299999994997992e-09,1e-06,0,0,1
+double,v2_climb_step_100hz,0.0,1e-06,0,0,1
+double,v3_spike_gap_reversal,1.0000000161269895e-08,1e-06,0,0,1
+double,v4_irregular_dt,2.0000000100495186e-08,1e-06,0,0,1
+double,v5_sustained_fault,9.99999993922529e-09,1e-06,0,0,1
+float,v1_statics_45hz,8.83000000010542e-08,0.001,0,0,1
+float,v2_climb_step_100hz,5.114999999999981e-05,0.001,0,0,1
+float,v3_spike_gap_reversal,1.600000000046009e-06,0.001,0,0,1
+float,v4_irregular_dt,1.4600000000086766e-05,0.001,0,0,1
+float,v5_sustained_fault,1.706000000023522e-05,0.001,0,0,1
+xtensa_esp32s3_double,(compile),,,,,1
+xtensa_esp32s3_float,(compile),,,,,1

@@ -1,0 +1,64 @@
+filter,test,result,detail,simulated
+S1_RobustAdaptiveKF,startup_static,pass,audio latches=0,1
+S2_DualTimescale,startup_static,FAIL,audio latches=1,1
+S3_AccelerationAwareKF,startup_static,FAIL,audio latches=32,1
+S1P_PersistenceKF,startup_static,pass,audio latches=0,1
+S4_FastSlowGated,startup_static,FAIL,audio latches=1,1
+S5_LightGateKF,startup_static,pass,audio latches=0,1
+B02_project_kalman,startup_static,FAIL,audio latches=1,1
+C03_CV_tracker,startup_static,pass,audio latches=0,1
+D01_Kalman_CV,startup_static,FAIL,audio latches=1,1
+S1_RobustAdaptiveKF,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=0",1
+S2_DualTimescale,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=1",1
+S3_AccelerationAwareKF,missing_data_gap,FAIL,"latches_in_4s_after_gap=2, total=10",1
+S1P_PersistenceKF,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=0",1
+S4_FastSlowGated,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=1",1
+S5_LightGateKF,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=0",1
+B02_project_kalman,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=1",1
+C03_CV_tracker,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=0",1
+D01_Kalman_CV,missing_data_gap,pass,"latches_in_4s_after_gap=0, total=1",1
+S1_RobustAdaptiveKF,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+S2_DualTimescale,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+S3_AccelerationAwareKF,sensor_spike,FAIL,"extreme_v=False, audio_on_after_spike=True",1
+S1P_PersistenceKF,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+S4_FastSlowGated,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+S5_LightGateKF,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+B02_project_kalman,sensor_spike,pass,"extreme_v=False, audio_on_after_spike=False",1
+C03_CV_tracker,sensor_spike,FAIL,"extreme_v=False, audio_on_after_spike=True",1
+D01_Kalman_CV,sensor_spike,FAIL,"extreme_v=False, audio_on_after_spike=True",1
+S1_RobustAdaptiveKF,rapid_reversal_exit,pass,exit_after_reversal_s=0.87,1
+S2_DualTimescale,rapid_reversal_exit,FAIL,exit_after_reversal_s=nan,1
+S3_AccelerationAwareKF,rapid_reversal_exit,pass,exit_after_reversal_s=0.21,1
+S1P_PersistenceKF,rapid_reversal_exit,pass,exit_after_reversal_s=0.87,1
+S4_FastSlowGated,rapid_reversal_exit,pass,exit_after_reversal_s=0.97,1
+S5_LightGateKF,rapid_reversal_exit,pass,exit_after_reversal_s=0.73,1
+B02_project_kalman,rapid_reversal_exit,pass,exit_after_reversal_s=0.69,1
+C03_CV_tracker,rapid_reversal_exit,pass,exit_after_reversal_s=0.57,1
+D01_Kalman_CV,rapid_reversal_exit,pass,exit_after_reversal_s=0.57,1
+S1_RobustAdaptiveKF,fault_veto_on_fraction,pass,on_fraction_with_veto=0.000 without=0.000 (fault_flag=gap),1
+S2_DualTimescale,fault_veto_on_fraction,pass,on_fraction_with_veto=0.000 without=0.000 (fault_flag=gap),1
+S3_AccelerationAwareKF,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.127 without=0.660 (fault_flag=estimator),1
+S1P_PersistenceKF,fault_veto_on_fraction,pass,on_fraction_with_veto=0.000 without=0.000 (fault_flag=gap),1
+S4_FastSlowGated,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.960 without=0.960 (fault_flag=gap),1
+S5_LightGateKF,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.953 without=0.953 (fault_flag=gap),1
+B02_project_kalman,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.967 without=0.967 (fault_flag=gap),1
+C03_CV_tracker,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.633 without=0.633 (fault_flag=gap),1
+D01_Kalman_CV,fault_veto_on_fraction,FAIL,on_fraction_with_veto=0.633 without=0.633 (fault_flag=gap),1
+S1_RobustAdaptiveKF,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+S2_DualTimescale,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+S3_AccelerationAwareKF,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+S1P_PersistenceKF,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+S4_FastSlowGated,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+S5_LightGateKF,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=0 (trip_n=5, fault_samples=150)",1
+B02_project_kalman,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=4 (trip_n=5, fault_samples=150)",1
+C03_CV_tracker,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=4 (trip_n=5, fault_samples=150)",1
+D01_Kalman_CV,fault_veto_generic_detector,pass,"on_samples_with_generic_veto=4 (trip_n=5, fault_samples=150)",1
+S1_RobustAdaptiveKF,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.00 (valve 2.0),1
+S2_DualTimescale,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.08 (valve 2.0),1
+S3_AccelerationAwareKF,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.34 (valve 2.0),1
+S1P_PersistenceKF,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.00 (valve 2.0),1
+S4_FastSlowGated,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.06 (valve 2.0),1
+S5_LightGateKF,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.00 (valve 2.0),1
+B02_project_kalman,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.52 (valve 2.0),1
+C03_CV_tracker,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.40 (valve 2.0),1
+D01_Kalman_CV,max_on_valve_bounds_false_on,pass,longest_on_episode_s=0.42 (valve 2.0),1
