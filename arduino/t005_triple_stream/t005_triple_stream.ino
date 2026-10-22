@@ -202,6 +202,22 @@ static bool bbProbe(uint8_t addr) {
   return ack;
 }
 
+// I2C bus recovery: if a slave was left mid-transaction (the ESP can reset
+// while bit-banging — every re-flash does this), it may hold SDA low and
+// ignore the bus until clocked out. Its 3V3 rail stays up across EN resets,
+// so it stays stuck across reboots and every scan then finds "nothing".
+// Standard fix: release SDA, clock SCL 9x, issue a stop.
+static void bbBusRecover() {
+  bbRelease(BUSC_SDA);
+  for (int i = 0; i < 9; i++) {
+    bbRelease(BUSC_SCL);
+    delayMicroseconds(5);
+    bbLow(BUSC_SCL);
+    delayMicroseconds(5);
+  }
+  bbStop();
+}
+
 static bool prom0Of(TwoWire &w, uint8_t addr, uint16_t &p0) {
   w.beginTransmission(addr);
   w.write(0xA0);
@@ -307,7 +323,7 @@ static void printLegend() {
 }
 
 static void emitHeader(bool full) {
-  Serial.printf("#H,vario-bench-t005,0.5.2\n");
+  Serial.printf("#H,vario-bench-t005,0.5.3\n");
   if (full) printLegend();
 }
 
@@ -377,6 +393,9 @@ static bool healthCheck() {
   // A fresh MS5611 may not ACK for a while after power-up (t000's scanner
   // only works because scanning addr 1..126 spends ~hundreds of ms first),
   // so retry each address once after a settle delay before giving up.
+  // First: bus recovery — a slave left mid-transaction by an earlier reset
+  // holds SDA low and NAKs everything until clocked out.
+  bbBusRecover();
   uint8_t cAddr = 0;
   for (int attempt = 0; attempt < 2 && !cAddr; attempt++) {
     for (uint8_t cand : {0x77, 0x76}) {
