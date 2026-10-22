@@ -1,0 +1,35 @@
+{
+  "comment": "Task E Phase 2 experiment definition. split=whole-session: all tuning sees ONLY training sessions; validation sessions are held out until the final report. Rates are measured (physical timestamp derived), not nominal. 45 Hz era = t001..t005 firmware; 90 Hz = t006 OSR2048 firmware (nominal 100 Hz tick, measured 90 Hz P-stream).",
+  "data_dir": "../analysis/data",
+  "audio_policy": {"lift_on": 0.20, "lift_off": 0.05,
+                   "comment": "research-PDF starting thresholds; used for latch counting and release proxy semantics"},
+  "event_reference": {
+    "method": "metrics.reference_v (1-s Gaussian-smoothed barometric derivative); cores at 0.5/0.3, entry extended to noise floor 0.05",
+    "core_on": 0.4, "core_off": 0.25, "floor": 0.05, "min_dur_s": 0.3, "min_gap_s": 1.0,
+    "comment": "derived reference intervals - descriptive proxy, NOT ground truth. Cores at 0.5 are unambiguous under hand-held approach motion; extending to the 0.05 noise floor (below statics p99=0.063) gives early, uncensored event entries without letting noise open events."
+  },
+  "training": [
+    {"file": "20261021_220205_t001_bench_60s",   "sids": [1],    "kind": "static", "rate_hz": 45},
+    {"file": "20261021_232906_t001_bench_60s",   "sids": [1],    "kind": "static", "rate_hz": 45},
+    {"file": "20261021_234824_t002_bench_60s",   "sids": [1],    "kind": "static", "rate_hz": 45},
+    {"file": "20261022_000337_t003_dual_60s",    "sids": [0, 1], "kind": "static", "rate_hz": 45},
+    {"file": "20261022_162134_t005_benchstatic", "sids": [0, 1], "kind": "static", "rate_hz": 45},
+    {"file": "20261022_163251_t006_benchstatic", "sids": [0, 1], "kind": "static", "rate_hz": 90},
+    {"file": "20261022_160658_t005_ControledMove","sids": [0, 1], "kind": "motion", "rate_hz": 45},
+    {"file": "20261022_163603_t006_ControledMove","sids": [0, 1], "kind": "motion", "rate_hz": 90},
+    {"file": "20261022_084001_t004_step_drop",   "sids": [1],    "kind": "motion", "rate_hz": 45}
+  ],
+  "validation": [
+    {"file": "20261022_082342_t004_elevator_f14", "sids": [1],    "kind": "motion", "rate_hz": 45},
+    {"file": "20261022_160010_t005_elevator_2x",  "sids": [0, 1], "kind": "motion", "rate_hz": 45},
+    {"file": "20261022_160426_t005_drop",         "sids": [0, 1], "kind": "motion", "rate_hz": 45},
+    {"file": "20261022_160548_t005_toss",         "sids": [0, 1], "kind": "motion", "rate_hz": 45},
+    {"file": "20261022_163450_t006_drop",         "sids": [0, 1], "kind": "motion", "rate_hz": 90}
+  ],
+  "rate_pairs": {
+    "comment": "physically equivalent rate comparison (seconds-based parameterizations). drop pair crosses splits: t005_drop is validation, t006_drop training - reported as a rate comparison only, not a tuning input.",
+    "static":  ["20261022_162134_t005_benchstatic", "20261022_163251_t006_benchstatic"],
+    "move":    ["20261022_160658_t005_ControledMove", "20261022_163603_t006_ControledMove"],
+    "drop":    ["20261022_160426_t005_drop", "20261022_163450_t006_drop"]
+  }
+}
