@@ -123,14 +123,17 @@ def smooth_v(t, alt, win_s=1.0):
     return np.gradient(alt_s, t), alt_s
 
 
-def evaluate(t, v_est, events, rest_mask, label, v_ref=None, rel_off=0.05):
+def evaluate(t, v_est, events, rest_mask, label, v_ref=None, rel_off=0.05,
+             rel_on=0.20):
     """Event-relative metrics for one estimator's climb-rate series.
 
     Per event (see module docstring for definitions):
       onset / release at the 0.3 strong-motion threshold (existing T-008),
-      rel_off at the lift-off threshold (R-2), fall 90->10 ring-down time
-      (R-2).  Everything is stored per-event so main() can bin by the
-      reference peak (signal strength).
+      rel_off with audio-hysteresis semantics (R-2): first drop below the
+      lift-off threshold after event end with no re-crossing of the
+      lift-on threshold within the window,
+      fall 90->10 ring-down time (R-2).  Everything is stored per-event so
+      main() can bin by the reference peak (signal strength).
     """
     v_rms = np.sqrt(np.mean(v_est[rest_mask] ** 2)) if rest_mask.any() else float("nan")
     per_event = []
@@ -144,16 +147,27 @@ def evaluate(t, v_est, events, rest_mask, label, v_ref=None, rel_off=0.05):
             j = np.where(win)[0]
             onset = t[i0 + j[0]] - e0
             rel = t[i0 + j[-1]] - e1
-        # R-2 release window: event end + 2 s of ring-down, lift-off threshold
+        # R-2 release window: event end + 4 s of ring-down, measured with
+        # AUDIO-STATE-MACHINE HYSTERESIS (research thresholds: lift-on
+        # rel_on=+0.20, lift-off rel_off=+0.05): rel_off = time after event
+        # end until |v| first drops below the lift-off threshold AND never
+        # exceeds the lift-on threshold again within the window. A plain
+        # "stays below 0.05" is un-measurable — rest noise alone (~0.06 m/s
+        # RMS on the baro-only KF) re-trips 0.05 constantly; with hysteresis
+        # the latch semantics match how the audio would actually behave.
         w0 = np.searchsorted(t, e0)
-        w1 = np.searchsorted(t, e1 + 2.0)
+        w1 = np.searchsorted(t, e1 + 4.0)
         tw = t[w0:w1]
         vw = v_est[w0:w1]
         rel5 = fall = float("nan")
         if len(vw):
-            above = np.where(np.abs(vw) > rel_off)[0]
-            if len(above):
-                rel5 = tw[above[-1]] - e1
+            k1 = np.searchsorted(tw, e1)
+            above_on = np.abs(vw[k1:]) > rel_on
+            below_off = np.where(np.abs(vw[k1:]) <= rel_off)[0]
+            for k in below_off:
+                if not above_on[k:].any():
+                    rel5 = tw[k1 + k] - e1
+                    break
             ipk = int(np.argmax(np.abs(vw)))
             peak = abs(vw[ipk])
             if peak >= 0.1:
@@ -225,8 +239,10 @@ def main():
     sid = int(next((a.split("=")[1] for a in sys.argv if a.startswith("--sid=")), 0))
     rel_off = float(next((a.split("=")[1] for a in sys.argv if a.startswith("--off=")),
                          0.05))
+    rel_on = float(next((a.split("=")[1] for a in sys.argv if a.startswith("--lift-on=")),
+                        0.20))
     csv_path = find_run(pattern)
-    print(f"Run: {csv_path.name}  sid={sid}  lift-off threshold={rel_off} m/s")
+    print(f"Run: {csv_path.name}  sid={sid}  lift-off={rel_off}  lift-on={rel_on} m/s")
     df, meta = load_run(csv_path)
     t, p, _ = pressure_series(df, meta, sid)
     p0 = p[: max(int(10 / np.median(np.diff(t))), 100)].mean() if t[-1] > 10 else p.mean()
@@ -246,9 +262,9 @@ def main():
     _, v_a = lpf_derivative(tu, altu, cutoff_hz=0.5)
     h_b, v_b = cv_kalman(tu, altu)
     results = [evaluate(tu, v_a, events, rest_mask, "A) LPF 0.5Hz + derivative",
-                        v_ref=v_ref, rel_off=rel_off)]
+                        v_ref=v_ref, rel_off=rel_off, rel_on=rel_on)]
     results.append(evaluate(tu, v_b, events, rest_mask, "B) CV-Kalman baro-only",
-                            v_ref=v_ref, rel_off=rel_off))
+                            v_ref=v_ref, rel_off=rel_off, rel_on=rel_on))
 
     u = None
     imu = df[df.type == "I"].dropna(subset=["ax"])
@@ -266,7 +282,7 @@ def main():
         print(f"IMU vertical axis: {vaxis} (rest {a_g:.0f} LSB = {a_g/16384:.3f} g)")
         h_c, v_c = cv_kalman(tu, altu, u=u)
         results.append(evaluate(tu, v_c, events, rest_mask, "C) Kalman + accel",
-                                v_ref=v_ref, rel_off=rel_off))
+                                v_ref=v_ref, rel_off=rel_off, rel_on=rel_on))
     else:
         print("no IMU in run — estimator C skipped")
 
@@ -290,7 +306,9 @@ def main():
         ax.legend(fontsize=8)
         ax.grid(alpha=0.3)
     fig.tight_layout()
-    savefig(fig, f"04_filter_replay_{run_name(csv_path)}.png")
+    # sid in the filename: sid 0 / sid 1 runs no longer overwrite each other
+    # (also avoids double-writing the same OneDrive-synced path within seconds)
+    savefig(fig, f"04_filter_replay_{run_name(csv_path)}_sid{sid}.png")
 
 
 if __name__ == "__main__":

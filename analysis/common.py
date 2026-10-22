@@ -95,6 +95,17 @@ def pressure_series(df, meta, sid=0):
     if pr.empty:
         raise SystemExit(f"No P frames for sid={sid} in this run.")
     prom = get_prom(meta, sid)
+    # sanity-filter corrupt ADC frames: a glitched I2C read can come back as
+    # d1=0x000000, which compensates to a nonsense NEGATIVE pressure; one such
+    # frame then poisons every downstream np.interp with NaN (seen in
+    # t005_toss sid 0, 2026-10-22 — exactly one frame killed the whole run).
+    # Band is far wider than any bench/altitude scenario, so real data never
+    # trips it.
+    bad = (pr.d1.values < 4_000_000) | (pr.d1.values > 12_000_000)
+    if bad.any():
+        print(f"  [pressure_series sid={sid}] dropping {int(bad.sum())} corrupt "
+              f"P frame(s) (raw d1 outside plausible band)")
+        pr = pr[~bad]
     # merge each pressure sample with the most recent temperature sample
     tr = tr.sort_values("t_s")
     idx = np.searchsorted(tr.t_s.values, pr.t_s.values, side="right") - 1

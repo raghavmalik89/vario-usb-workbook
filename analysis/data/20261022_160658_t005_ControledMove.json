@@ -1,0 +1,21 @@
+{
+  "label": "t005_ControledMove",
+  "started_utc": "2026-10-22T08:07:00.887566+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261022_160658_t005_ControledMove.csv",
+  "device": {
+    "firmware": "vario-bench-t005 0.5.3",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "osr=4096,p_hz=45,t_hz=5,sensors=2,imu=off,c_addr=0x77,c_status=missing"
+  },
+  "stats": {
+    "lines_written": 3994,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 39.96
+  }
+}
