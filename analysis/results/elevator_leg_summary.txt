@@ -1,0 +1,29 @@
+=== run1 20261023_221124_idf_elevator_2x.csv ===
+alt range sid0: 376.3 .. 439.0 m, final 416.2, total span 62.8 m
+legs (start-end s, mean climb rate m/s, dH m):
+      9.9-   33.8s  v=-1.59 m/s  dH= -38.2 m
+     51.5-   76.1s  v=+1.55 m/s  dH= +38.2 m
+     95.0-  118.9s  v=-1.60 m/s  dH= -38.3 m
+    136.7-  161.2s  v=+1.56 m/s  dH= +38.2 m
+FUS episodes: 6 (start-end s, peak implied v, dur):
+      0.6-    0.9s v=+0.83 dur= 0.30s
+      1.0-    6.1s v=+0.26 dur= 5.08s
+     35.4-   50.8s v=+0.23 dur=15.38s
+     52.3-   82.2s v=+0.21 dur=29.94s
+    137.5-  162.1s v=+0.22 dur=24.56s
+    162.3-  165.8s v=+0.24 dur= 3.50s
+episodes overlapping a detected leg: 2/6
+=== run2 20261023_221420_idf_elevator_2x.csv ===
+alt range sid0: 375.9 .. 418.1 m, final 415.9, total span 42.1 m
+legs (start-end s, mean climb rate m/s, dH m):
+      8.6-   32.5s  v=-1.59 m/s  dH= -38.2 m
+     50.0-   74.7s  v=+1.55 m/s  dH= +38.4 m
+     92.8-  116.7s  v=-1.60 m/s  dH= -38.2 m
+    134.7-  159.1s  v=+1.56 m/s  dH= +38.3 m
+FUS episodes: 5 (start-end s, peak implied v, dur):
+      0.4-    1.9s v=+0.31 dur= 1.52s
+      2.0-    3.9s v=+0.24 dur= 1.92s
+     33.2-   79.7s v=+0.22 dur=46.48s
+     92.2-   93.0s v=+0.21 dur= 0.88s
+    135.4-  164.7s v=+0.22 dur=29.30s
+episodes overlapping a detected leg: 3/5

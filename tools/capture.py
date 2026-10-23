@@ -11,7 +11,8 @@ Usage:
     python capture.py --auto --label t002_elevator_run1
 
 CSV columns (wide format, empty fields where not applicable):
-    seq,t_us,type,sid,d1,d2,ax,ay,az,gx,gy,gz
+    seq,t_us,type,sid,d1,d2,ax,ay,az,gx,gy,gz,eid,ev,val,note
+    (eid/ev/val carry V virtual-audio events; note carries B benchmark stats)
 
 Output: analysis/data/<YYYYMMDD_HHMMSS>_<label>.csv (+ .json sidecar)
 Ctrl+C stops cleanly and still writes the sidecar with stats.
@@ -33,9 +34,10 @@ try:
 except ImportError:
     sys.exit("pyserial not found. Install with:  pip install pyserial")
 
-COLS = ["seq", "t_us", "type", "sid", "d1", "d2", "ax", "ay", "az", "gx", "gy", "gz"]
+COLS = ["seq", "t_us", "type", "sid", "d1", "d2", "ax", "ay", "az", "gx", "gy", "gz",
+        "eid", "ev", "val", "note"]
 
-RE_DATA = re.compile(r"^(?P<type>[PTIE]),(?P<seq>\d+),(?P<t_us>\d+)(?:,(?P<rest>.*))?$")
+RE_DATA = re.compile(r"^(?P<type>[PTIEVBN]),(?P<seq>\d+),(?P<t_us>\d+)(?:,(?P<rest>.*))?$")
 RE_K = re.compile(r"^#K,(?P<sid>\d+),(?P<vals>\d+(?:,\d+)*)$")
 RE_H = re.compile(r"^#H,(?P<name>.+),(?P<ver>.+)$")
 RE_C = re.compile(r"^#C,(?P<kv>.*)$")
@@ -87,21 +89,39 @@ def parse_line(raw: str):
                 row[k] = int(v)
         elif typ == "E":
             row["sid"] = rest[0]  # error code parked in sid column
+        elif typ == "V":        # virtual audio event: eid, ev, val
+            row["eid"], row["ev"], row["val"] = int(rest[0]), int(rest[1]), int(rest[2])
+        elif typ == "B":        # benchmark stats blob -> note column
+            row["note"] = ",".join(rest)
     except (IndexError, ValueError):
         return ("bad", "field-error", line)
     return ("row", row)
 
 
 def reader_thread(ser, q, stop):
+    """Chunked reads + incremental line splitting.
+
+    ser.readline() is a per-byte Python loop and caps the drain rate at
+    ~8 KB/s — far below the firmware's ~12 KB/s full-rate stream (measured:
+    it filled the device TX ring and cost 469 dropped frames in one run).
+    Blocking chunked reads lift the host ceiling by an order of magnitude.
+    """
+    buf = b""
     while not stop.is_set():
         try:
-            raw = ser.readline()
+            data = ser.read(4096)
         except serial.SerialException as e:
             q.put(("bad", f"serial-error: {e}", ""))
             stop.set()
             return
-        if raw:
+        if not data:
+            continue
+        buf += data
+        while b"\n" in buf:
+            raw, buf = buf.split(b"\n", 1)
             q.put(parse_line(raw.decode("utf-8", errors="replace")))
+    if buf:
+        q.put(parse_line(buf.decode("utf-8", errors="replace")))
 
 
 def main():
@@ -126,6 +146,10 @@ def main():
     ser = serial.Serial(port, args.baud, timeout=0.2, write_timeout=1)
     time.sleep(2.0)  # let the board reset / USB CDC settle
     ser.reset_input_buffer()
+    try:
+        ser.write(b"G")   # firmware stream-start handshake (vario-idf >= 0.1.0)
+    except serial.SerialException:
+        pass
 
     meta = {"label": args.label, "started_utc": datetime.now(timezone.utc).isoformat(),
             "port": port, "baud": args.baud, "csv": csv_path.name}

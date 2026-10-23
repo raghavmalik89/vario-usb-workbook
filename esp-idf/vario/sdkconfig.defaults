@@ -1,0 +1,11 @@
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_FREERTOS_HZ=1000
+# IDF's S3 default is 160 MHz; the estimator bank (all-double math, software
+# FPU) needs 240 MHz to keep the 5 ms tick budget (measured: sections alone
+# exceed 4.4 ms at 160 MHz).
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# Console stays on UART0 (bridge) and stays quiet; the data link is the
+# USB Serial/JTAG peripheral used directly by the app (see tx.c).
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+CONFIG_LOG_MAXIMUM_LEVEL_WARN=y
