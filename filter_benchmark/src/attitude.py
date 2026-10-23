@@ -103,6 +103,39 @@ def madgwick_update(q, accel_body, omega, dt, beta=0.3, accel_sign=-1.0):
     return qn / np.linalg.norm(qn)
 
 
+def quat_from_accel_tilt(accel_body):
+    """Tilt-only quaternion from one accel sample (gravity direction in body
+    coords), BODY->EARTH convention, via exact shortest-arc alignment of the
+    measured specific force onto (0, 0, -g).
+
+    Causal warm-start for the Madgwick/MARG filter: starting from identity
+    needs ~5 s at beta=0.3 to acquire a tilted rig's attitude, and during
+    that transient gravity leaks into the fused vertical acceleration
+    (measured [M]: 2.24 m/s^2 mean over the first 5 s on the t007 rig at
+    6.3 deg tilt — enough to run the fused KF's v to 14 m/s). One sample
+    removes ~all of it: az(0) ~ 1e-15 by construction. Roll/pitch trig
+    forms were tried first and are convention treacherous (both the plain
+    and conjugated forms left 0.2-0.6 m/s^2 residual on this X-up rig);
+    shortest-arc is exact by construction and yaw-free (yaw is unobservable
+    from accel anyway and irrelevant to gravity compensation).
+    """
+    a = np.asarray(accel_body, dtype=float)
+    n = np.linalg.norm(a)
+    if n < 1e-6:
+        return np.array([1.0, 0.0, 0.0, 0.0])
+    u = a / n                                   # specific-force direction, body
+    d = float(np.dot(u, np.array([0.0, 0.0, -1.0])))
+    if d < -0.999999:                           # 180 deg: any perpendicular axis
+        axis = np.cross(u, [1.0, 0.0, 0.0])
+        if np.linalg.norm(axis) < 1e-6:
+            axis = np.cross(u, [0.0, 1.0, 0.0])
+        axis /= np.linalg.norm(axis)
+        return np.array([0.0, axis[0], axis[1], axis[2]])
+    w = np.cross(u, np.array([0.0, 0.0, -1.0]))
+    q = np.array([1.0 + d, w[0], w[1], w[2]])
+    return q / np.linalg.norm(q)
+
+
 def estimate_attitude(t_s, accel_body, omega, beta=0.3, q0=(1.0, 0.0, 0.0, 0.0)):
     """Run the filter over sample arrays. Returns (N, 4) quaternions in the
     BODY->EARTH convention required by fusion.gravity_compensate.

@@ -113,6 +113,7 @@ class BaroImuFusion:
         self._fault_count = 0
         self.fault = False
         self.n_gated = 0
+        self.n_reinit = 0
         self.baro_only = True
 
     # -- flags ----------------------------------------------------------------
@@ -196,11 +197,23 @@ class BaroImuFusion:
         y = float(z - (H @ self._x)[0])
         S = float(self._P[0, 0] + r)
         sig = np.sqrt(S)
-        # fault latch: persistent huge innovations -> fault -> coast
+        # fault latch: persistent huge innovations -> loss of track. The
+        # pre-Phase-5 behavior set a flag and kept coasting, which left v
+        # frozen at a runaway value forever (measured [M]: one attitude
+        # warm-up transient ran v to 14 m/s and the gate then rejected
+        # every measurement for the whole session). Recovery = declared
+        # reacquisition from the measurement, same as filter init.
         if abs(y) > 5.0 * sig:
             self._fault_count += 1
             if self._fault_count >= 8:
                 self.fault = True
+                self._fault_count = 0
+                self.n_reinit += 1
+                self._x = np.array([z, 0.0])
+                self._P = np.diag([1.0, 1.0])
+                self._t_state = t
+                self._t_baro = t
+                return float(self._x[1])
         else:
             self._fault_count = 0
             self.fault = False

@@ -118,3 +118,73 @@ class TestImuIo:
         with tempfile.TemporaryDirectory() as d:
             csv = self._make_capture(Path(d), imu_on=False)
             assert imu_io.imu_stream(csv) is None
+
+
+class TestTiltInit:
+    def test_exact_at_rest_any_orientation(self):
+        # shortest-arc init must remove gravity EXACTLY (to float precision)
+        # for any static orientation — az(0) ~ 0 by construction.
+        rng = np.random.default_rng(7)
+        for _ in range(20):
+            a = rng.normal(0, 1, 3)
+            a = a / np.linalg.norm(a) * G0
+            q0 = attitude.quat_from_accel_tilt(a)
+            assert abs(gravity_compensate(a, q0)) < 1e-9
+            assert abs(np.linalg.norm(q0) - 1.0) < 1e-12
+
+    def test_zero_accel_falls_back_to_identity(self):
+        q0 = attitude.quat_from_accel_tilt([0, 0, 0])
+        assert np.allclose(q0, [1, 0, 0, 0])
+
+    def test_warm_start_removes_convergence_transient(self):
+        # tilted rig at rest: identity start leaks gravity into az for ~5 s;
+        # tilt init must be clean from sample 0 (the [M] t007 failure mode).
+        n = 1000
+        t = np.arange(n) * 0.005
+        tilt = np.radians(6.3)
+        R = np.array([[1, 0, 0], [0, np.cos(tilt), -np.sin(tilt)],
+                      [0, np.sin(tilt), np.cos(tilt)]])
+        a = (R.T @ (np.array([0, 0, -G0])[:, None] * np.ones((1, n)))).T
+        w = np.zeros((n, 3))
+        q_cold = attitude.estimate_attitude(t, a, w)
+        q_warm = attitude.estimate_attitude(
+            t, a, w, q0=attitude.quat_from_accel_tilt(a[0]))
+        head = slice(0, 200)   # first second
+        az_cold = np.mean(np.abs([gravity_compensate(a[i], q_cold[i])
+                                  for i in range(*head.indices(n))]))
+        az_warm = np.mean(np.abs([gravity_compensate(a[i], q_warm[i])
+                                  for i in range(*head.indices(n))]))
+        assert az_warm < 0.02, az_warm
+        assert az_warm < 0.1 * az_cold, (az_warm, az_cold)
+
+
+class TestFaultRecovery:
+    def test_persistent_outlier_reinitializes_and_reacquires(self):
+        # 12 samples offset by +50 m = persistent loss of track: the filter
+        # must declare fault, reinit from the measurement, and track again
+        # once truth returns (pre-Phase-5 behavior: flag only, coast forever).
+        from fusion import BaroImuFusion
+        f = BaroImuFusion(q=10.0, r=0.042)
+        t = np.arange(400) * 0.011
+        h = 0.5 * np.sin(0.1 * t)
+        v = np.empty(len(t))
+        for i, tt in enumerate(t):
+            v[i] = f.update_baro(h[i] + (50.0 if 200 <= i < 212 else 0.0), tt)
+        assert f.n_reinit >= 1, f.n_reinit
+        assert np.all(np.isfinite(v))
+        # after the burst, h must reacquire truth (v finite, no runaway)
+        assert abs(v[-1]) < 1.0, v[-1]
+        assert not f.fault
+
+    def test_isolated_spike_is_gated_not_fatal(self):
+        from fusion import BaroImuFusion
+        f = BaroImuFusion(q=10.0, r=0.042)
+        t = np.arange(400) * 0.011
+        h = 0.5 * np.sin(0.1 * t)
+        h[200] += 50.0                    # one-sample glitch
+        v = np.empty(len(t))
+        for i, tt in enumerate(t):
+            v[i] = f.update_baro(h[i], tt)
+        assert f.n_reinit == 0
+        assert f.n_gated >= 1             # the glitch was rejected
+        assert abs(v[-1]) < 1.0           # state survived

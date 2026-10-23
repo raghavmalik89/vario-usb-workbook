@@ -1,0 +1,23 @@
+{
+  "label": "t007_toss",
+  "started_utc": "2026-10-23T03:11:41.410405+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_111139_t007_toss.csv",
+  "device": {
+    "firmware": "vario-bench-t007 0.7.0",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "osr=2048,p_hz=90,t_hz=10,sensors=2,imu=on,i_hz=200,dlpf=44hz,a_lsb_per_g=4096,g_lsb_per_dps=65.5,a_fs=8g,g_fs=500dps,c_addr=0x77,c_status=missing"
+  },
+  "stats": {
+    "lines_written": 16233,
+    "bad_lines": 5,
+    "seq_drops": 1091,
+    "bytes_read": 0,
+    "errors": {
+      "1": 2
+    },
+    "elapsed_s": 45.0
+  }
+}
