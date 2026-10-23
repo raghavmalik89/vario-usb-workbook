@@ -1,0 +1,3 @@
+session,sid,n_imu,imu_rate_hz,g_cal,rest_a_mean,rest_a_std,gyro_bias_mdps,madgwick_rest_az_err,alt_noise_raw_m,alt_noise_filt_m,r_est,q_cfg,v_rms_baro_only,v_rms_fusion,v_rms_rest_baro_only,v_rms_rest_fusion,max_abs_v_baro_only,max_abs_v_fusion,accel_bias_norm_final,n_gated_fusion,fault_fusion,n_gated_baro_only,fault_baro_only,n_reinit_fusion,n_reinit_baro_only,n_baro
+20261023_122655_t008_quiet_static,0,12003,200.0,10.077,9.807,0.013,55798.8,0.011,0.4025,0.4019,0.02934,10.0,0.1085,0.1086,0.1085,0.1086,0.679,0.678,0.0014,0,False,0,False,0,0,5402
+20261023_122655_t008_quiet_static,1,12003,200.0,10.077,9.807,0.013,55798.8,0.011,0.4267,0.4248,0.02934,10.0,0.1084,0.1085,0.1084,0.1085,0.693,0.693,0.0014,2,False,2,False,0,0,5402

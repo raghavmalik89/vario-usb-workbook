@@ -20,3 +20,4 @@ file,seq_gaps,seq_duplicates,out_of_order_t,duplicate_t,duration_s,P_frames,P_co
 20261023_111139_t007_toss.csv,10,0,0,4058,43.55,7307,0,100.0,10.0,810,1,10.0,0.003,2,True,,usable with caveats (see report),8114.0,433.0,200.0,100.0,10.0,10.0,0.003,code1x2
 20261023_111611_t007_ControledMove2.csv,10,0,0,3507,38.15,6318,0,100.0,10.0,700,0,10.0,0.003,0,True,,usable with caveats (see report),7013.0,0.0,200.0,100.0,10.0,10.0,0.003,
 20261023_112419_t007_elevator_2x.csv,21,0,0,16748,174.08,30153,0,100.0,10.0,3347,0,10.0,0.002,0,True,,usable with caveats (see report),33474.0,0.0,200.0,100.0,10.0,10.0,0.002,
+20261023_122655_t008_quiet_static.csv,1,0,0,6002,60.02,10804,0,100.0,10.0,1200,0,10.0,0.002,0,True,,usable with caveats (see report),12003.0,0.0,200.0,100.0,10.0,10.0,0.002,
