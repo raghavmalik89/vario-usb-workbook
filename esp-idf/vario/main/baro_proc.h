@@ -27,6 +27,10 @@ void baro_proc_init(baro_proc_t *bp, const uint16_t prom[8]);
  * metres relative to the fixed 101325 Pa reference. */
 double baro_proc_altitude(baro_proc_t *bp, uint32_t d1, uint32_t d2);
 
+/* BMP581 path: raw 24-bit on-chip-compensated pressure (Pa = raw/64) ->
+ * altitude relative to the fixed 101325 Pa reference.  NaN on bad input. */
+double baro_proc_altitude_bmp581(uint32_t raw_p);
+
 int baro_proc_p0_ready(const baro_proc_t *bp);
 
 #endif

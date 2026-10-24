@@ -187,7 +187,14 @@ def main():
                         w.writerow(row)
                         stats["lines_written"] += 1
                     elif kind == "meta":
-                        meta.setdefault("device", {})[item[1]] = item[2]
+                        dev = meta.setdefault("device", {})
+                        # #C lines all arrive with key "config"; keep the
+                        # last one for backward compat AND accumulate every
+                        # line in config_lines so per-device #C tags (e.g.
+                        # type=bmp581) survive into the sidecar.
+                        if item[1] == "config":
+                            dev.setdefault("config_lines", []).append(item[2])
+                        dev[item[1]] = item[2]
                     elif kind == "bad":
                         stats["bad_lines"] += 1
                 now = time.monotonic()

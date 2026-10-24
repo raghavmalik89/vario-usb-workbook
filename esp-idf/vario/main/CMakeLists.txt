@@ -3,6 +3,7 @@ idf_component_register(
         "main.c"
         "tx.c"
         "ms5611.c"
+        "bmp581.c"
         "mpu6050.c"
         "baro_proc.c"
         "estimators.c"

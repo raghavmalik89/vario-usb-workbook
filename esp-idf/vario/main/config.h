@@ -44,6 +44,18 @@
 #define MS5611_OSR_CMD_T 0x56 /* D2 OSR2048 */
 #define MS5611_CONV_US   5000 /* OSR2048 typ 4.54 ms; wait 5.0 ms        */
 
+/* ---- BMP581 (Bus B, 2026-10-24 sensor swap) --------------------------------
+ * BMP5-generation part: on-chip trim compensation, 24-bit fixed-point data
+ * (pressure Pa = raw/64, temperature degC = raw/65536).  NORMAL mode at 40 Hz,
+ * IIR bypassed (offline pipeline filters), OSR p16 t2 (~0.7 ms conversion,
+ * far inside the 25 ms ODR window — no clone conversion quirks to dodge).
+ * The old MS5611 slot pipeline (BARO_EVERY/TEMP_EVERY) applies to MS5611
+ * devices only; the BMP581 is polled on drdy. */
+#define BMP581_OSR_P     0x04   /* 16X pressure oversampling             */
+#define BMP581_OSR_T     0x01   /* 2X temperature oversampling             */
+#define BMP581_ODR       0x11   /* 40 Hz ODR code                        */
+#define BMP581_P_HZ      40
+
 /* ---- Streaming scales (declared in #C; offline tools read these) ---------- */
 #define MPU_A_LSB_PER_G     4096    /* +-8 g   */
 #define MPU_G_LSB_PER_DPS   65.5    /* +-500 dps */

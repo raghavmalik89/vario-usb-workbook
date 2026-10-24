@@ -1,0 +1,8 @@
+Bosch BMP5 sensor API reference copies (fetched 2026-10-24 via cdn.jsdelivr.net,
+BoschSensortec/BMP5-Sensor-API). Used to verify:
+  - register map (OSR_CONFIG 0x36, ODR_CONFIG 0x37, STATUS 0x28, CMD 0x7E)
+  - ODR code table (0x11 = 40 Hz)
+  - compensation contract: host divides only — pressure Pa = raw24/64,
+    temp C = raw24/65536 (on-chip trim; no PROM/coefficients)
+  - the Bosch driver never polls STATUS.drdy; it burst-reads data directly.
+Reference only — the firmware driver is esp-idf/vario/main/bmp581.{h,c}.

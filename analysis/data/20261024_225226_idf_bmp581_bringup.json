@@ -1,0 +1,19 @@
+{
+  "label": "idf_bmp581_bringup",
+  "started_utc": "2026-10-24T14:52:28.204333+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261024_225226_idf_bmp581_bringup.csv",
+  "device": {
+    "config": "status=stream_go",
+    "firmware": "vario-idf 0.2.0"
+  },
+  "stats": {
+    "lines_written": 6930,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 20.22
+  }
+}

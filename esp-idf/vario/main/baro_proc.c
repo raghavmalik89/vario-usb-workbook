@@ -35,7 +35,21 @@ static double compensate_pa(const baro_proc_t *bp, uint32_t d1, uint32_t d2)
     off -= off2;
     sens -= sens2;
     double p01mbar = ((double)d1 * sens / 2097152.0 - off) / 32768.0;
-    return p01mbar * 10.0;                                   /* Pa */
+    /* DEF-011 FIXED (2026-10-24, sensor-integration build): the ×10.0 here
+     * made post-p0fix firmware velocities ×1.5498 and altitude garbage
+     * (−23 725 m).  Exact transcription of analysis/common.py:
+     * p * 10.0 / 1000.0 * 100.0 == p (0.01 mbar == 1 Pa). */
+    return p01mbar * 10.0 / 1000.0 * 100.0;                  /* Pa */
+}
+
+/* BMP581: on-chip compensated fixed point (see bmp581.h).  Every pressure
+ * sample carries its own fresh temperature — no d2 seeding, no DEF-010
+ * boot-step. */
+double baro_proc_altitude_bmp581(uint32_t raw_p)
+{
+    double p = (double)raw_p / 64.0;                           /* Pa */
+    if (!(p > 0.0) || !isfinite(p)) return NAN;
+    return 44330.0 * (1.0 - pow(p / 101325.0, 0.1903));
 }
 
 double baro_proc_altitude(baro_proc_t *bp, uint32_t d1, uint32_t d2)
