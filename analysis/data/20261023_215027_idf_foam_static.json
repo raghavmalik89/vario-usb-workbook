@@ -1,0 +1,23 @@
+{
+  "label": "idf_foam_static",
+  "started_utc": "2026-10-23T13:50:29.420344+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_215027_idf_foam_static.csv",
+  "device": {
+    "config": "status=stream_go",
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056"
+  },
+  "stats": {
+    "lines_written": 19735,
+    "bad_lines": 1,
+    "seq_drops": 2635334,
+    "bytes_read": 0,
+    "errors": {
+      "3": 1
+    },
+    "elapsed_s": 60.33
+  }
+}

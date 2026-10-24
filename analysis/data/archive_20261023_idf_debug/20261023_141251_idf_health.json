@@ -1,0 +1,17 @@
+{
+  "label": "idf_health",
+  "started_utc": "2026-10-23T06:12:53.703217+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_141251_idf_health.csv",
+  "stats": {
+    "lines_written": 15,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 15
+    },
+    "elapsed_s": 15.25
+  }
+}

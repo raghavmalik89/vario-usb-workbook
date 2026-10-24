@@ -1,0 +1,23 @@
+{
+  "label": "idf_nanfix_static",
+  "started_utc": "2026-10-23T08:59:44.974270+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_165942_idf_nanfix_static.csv",
+  "device": {
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "0,0,0,0,0,0",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "status=health_fail_halt"
+  },
+  "stats": {
+    "lines_written": 39,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 39
+    },
+    "elapsed_s": 40.25
+  }
+}

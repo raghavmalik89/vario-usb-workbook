@@ -1,0 +1,21 @@
+{
+  "label": "idf_dbg2",
+  "started_utc": "2026-10-23T07:03:46.768403+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_150344_idf_dbg2.csv",
+  "device": {
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "osr=2048,p_hz=100,t_hz=10,i_hz=200,imu=on,est=on,a_lsb_per_g=4096,g_lsb_per_dps=65.5,a_fs=8g,dlpf=44hz,tick_ms=5,est_map=e0..e4=D01,C03,S4,S5,FUS@sid0;e5..e9=sid1,tone=500+450v,au=0.20/0.05"
+  },
+  "stats": {
+    "lines_written": 8749,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {},
+    "elapsed_s": 25.22
+  }
+}

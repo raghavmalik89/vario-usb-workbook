@@ -1,0 +1,23 @@
+{
+  "label": "idf_busscan",
+  "started_utc": "2026-10-23T10:06:42.338395+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_180640_idf_busscan.csv",
+  "device": {
+    "config": "scan_A:0x68,0x77,",
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "0,0,0,0,0,0",
+    "prom_1": "53519,53000,33254,30158,31701,28056"
+  },
+  "stats": {
+    "lines_written": 14,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 14
+    },
+    "elapsed_s": 15.24
+  }
+}

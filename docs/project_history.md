@@ -58,8 +58,39 @@ root cause — this entry's report).
   (10 pp, 7 figures, full evidence trail), `docs/defect_register.md` (10 defects),
   this history, firmware source, analysis scripts + figures, raw captures.
 
+## 2026-10-24 — Bench 6: ESP-IDF filter benchmark (Phase 6) + firmware archive
+- Full trade-space re-evaluation on the clean ESP-IDF captures (37 candidates: 29
+  standalone, stacked S1–S5, CV/Kalman refs, IMU fusion), fixed-ISA reconstruction
+  (DEF-001 corrected), per-sid evaluation, frozen configs first, tuning as a separate
+  leakage-controlled pass (train-select / validation-report), sampling-rate control,
+  18-figure suite. NO estimator selected or frozen.
+- **Formal MCU-vs-Python equivalence (queued task): PASS for D01** — post-p0fix statics
+  agree to <=0.3 mm/s bias, p95 1 mm/s, 100 % audio-transition agreement (era-correct
+  isa_fw10+seed chain).
+- **DEF-011 (new, major):** compensate_pa returns 10x pressure scale; masked under
+  moving-p0, exposed by the p0fix -> post-fix firmware velocities x1.5498, absolute
+  altitude garbage (-23 725 m). Fix queued in the BMP581 integration build.
+- Also documented: DEF-012 (asymmetric tone clamp, tones blind below -0.22 m/s),
+  DEF-013 (pre-p0fix gate-decision chaos in the moving window, scoring unaffected),
+  DEF-010 mechanism (d2 boot-seed step).
+- **Ranking shifts vs Phases 2-5 (fresh study, not confirmation):** C03 rises to the
+  composite top (its old weaknesses were firmware-era artefacts, now fixed); D01's
+  rest floor was a reference artefact (0.101->0.057); S5's Phase-4 stand-out status
+  does not survive corrected streams; FUS shows no measurable benefit on
+  vibration-free data; B02_Butter2 collapses on the 50 Hz chain (rate artefact).
+- **On-target MCU CPU (B-lines, post-p0fix):** D01 36, FUS 33, S5 77, S4 97, C03
+  105 us avg — all <=2.6 % of the 5000 us tick; efficiency is not a differentiator.
+- **Firmware archived for A/B after new sensors:**
+  esp-idf/firmware_archive/vario_idf_MS5611x2_MPU6050_p0fix_r8e79e68_20261023/
+  (binaries + SHA-256 + README).
+- **Deliverables:** filter_benchmark/reports/phase6_espidf_benchmark.md + .pdf
+  (11 pp), filter_benchmark/bench6/ (datasets/streams/candidates/metrics +
+  run6/equiv6/rate6/tune6/mcucpu6/figures6), results CSVs, figs/fig01-18,
+  defect register updates, docs/pdf/build_phase6_report.py.
+
 ## Open threads (next sessions)
-- Formal MCU-vs-Python replay equivalence check on the fixed reference (queued).
+- Post-p0fix dynamic capture (elevator/handtest) to close the S4/S5/FUS MCU-audio
+  equivalence gap on transitions (currently vacuous on statics).
 - BMP581 + LSM6DSV16X integration (breakouts ordered) — retire clone tempco class
   (DEF-007); architecture is sensor-independent.
 - Real-flight capture; elevator remains a proxy.

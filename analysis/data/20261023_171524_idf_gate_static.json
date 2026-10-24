@@ -1,0 +1,23 @@
+{
+  "label": "idf_gate_static",
+  "started_utc": "2026-10-23T09:15:26.665198+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_171524_idf_gate_static.csv",
+  "device": {
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "0,0,0,0,0,0",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "status=health_fail_halt"
+  },
+  "stats": {
+    "lines_written": 70,
+    "bad_lines": 0,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 70
+    },
+    "elapsed_s": 70.33
+  }
+}

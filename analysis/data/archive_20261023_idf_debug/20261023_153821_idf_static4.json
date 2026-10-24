@@ -1,0 +1,23 @@
+{
+  "label": "idf_static4",
+  "started_utc": "2026-10-23T07:38:23.342454+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_153821_idf_static4.csv",
+  "device": {
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "47752,48033,29037,26148,32806,27273",
+    "prom_1": "53519,53000,33254,30158,31701,28056",
+    "config": "cal: cycles=240000 etim_us=996 ftick_delta=1 spin=9756"
+  },
+  "stats": {
+    "lines_written": 17874,
+    "bad_lines": 1,
+    "seq_drops": 4098,
+    "bytes_read": 0,
+    "errors": {
+      "3": 1
+    },
+    "elapsed_s": 40.22
+  }
+}

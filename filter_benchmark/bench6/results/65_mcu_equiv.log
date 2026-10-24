@@ -1,0 +1,137 @@
+== Part A: harness validation, pre-p0fix era chain (moving_p0 + seed) ==
+  [A_pre] 221124 sid0 D01_Kalman_CV    startup_t<8s: n=  65 bias=-60629.6 ms p95|e|=134887.4 ms audio agree=0.00%
+  [A_pre] 221124 sid0 D01_Kalman_CV    steady_t>=8s: n= 371 bias=  +13.6 ms p95|e|=  76.7 ms audio agree=87.50%
+  [A_pre] 221124 sid0 D01_Kalman_CV    frozen_t>=50s: n= 299 bias=   +0.7 ms p95|e|=   1.1 ms audio agree=87.50%
+  [A_pre] 221124 sid0 C03_CV_tracker   startup_t<8s: n=  52 bias=+32829.1 ms p95|e|=271885.1 ms audio agree=0.00%
+  [A_pre] 221124 sid0 C03_CV_tracker   steady_t>=8s: n= 331 bias=  +18.8 ms p95|e|=  91.0 ms audio agree=44.44%
+  [A_pre] 221124 sid0 C03_CV_tracker   frozen_t>=50s: n= 257 bias=   +3.6 ms p95|e|=  54.5 ms audio agree=44.44%
+  [A_pre] 221124 sid0 S4_FastSlowGated startup_t<8s: n=  66 bias=-7126.8 ms p95|e|=12667.3 ms audio agree=0.00%
+  [A_pre] 221124 sid0 S4_FastSlowGated steady_t>=8s: n= 404 bias=-1830.8 ms p95|e|=9835.8 ms audio agree=42.86%
+  [A_pre] 221124 sid0 S4_FastSlowGated frozen_t>=50s: n= 212 bias=   +0.4 ms p95|e|=   1.8 ms audio agree=42.86%
+  [A_pre] 221124 sid0 S5_LightGateKF   startup_t<8s: n=  80 bias=-8291.9 ms p95|e|=14202.3 ms audio agree=0.00%
+  [A_pre] 221124 sid0 S5_LightGateKF   steady_t>=8s: n= 525 bias= +788.8 ms p95|e|=8462.6 ms audio agree=62.50%
+  [A_pre] 221124 sid0 S5_LightGateKF   frozen_t>=50s: n= 330 bias=   +0.4 ms p95|e|=   1.2 ms audio agree=62.50%
+  [A_pre] 221124 sid0 FUS              startup_t<8s: n=  61 bias= -124.9 ms p95|e|=7812.3 ms audio agree=0.00%
+  [A_pre] 221124 sid0 FUS              steady_t>=8s: n= 224 bias=  +22.1 ms p95|e|= 270.7 ms audio agree=62.50%
+  [A_pre] 221124 sid0 FUS              frozen_t>=50s: n= 198 bias=   -3.6 ms p95|e|=  42.9 ms audio agree=62.50%
+  [A_pre] 221124 sid1 D01_Kalman_CV    startup_t<8s: n=  54 bias=-52539.5 ms p95|e|=68474.3 ms audio agree=0.00%
+  [A_pre] 221124 sid1 D01_Kalman_CV    steady_t>=8s: n= 399 bias=  +21.8 ms p95|e|=  51.9 ms audio agree=63.64%
+  [A_pre] 221124 sid1 D01_Kalman_CV    frozen_t>=50s: n= 323 bias=   +0.4 ms p95|e|=   1.1 ms audio agree=63.64%
+  [A_pre] 221124 sid1 C03_CV_tracker   startup_t<8s: n=  51 bias=+20423.6 ms p95|e|=134868.5 ms audio agree=0.00%
+  [A_pre] 221124 sid1 C03_CV_tracker   steady_t>=8s: n= 375 bias=  +20.9 ms p95|e|=  70.6 ms audio agree=18.18%
+  [A_pre] 221124 sid1 C03_CV_tracker   frozen_t>=50s: n= 293 bias=   +3.8 ms p95|e|=  54.6 ms audio agree=18.18%
+  [A_pre] 221124 sid1 S4_FastSlowGated startup_t<8s: n=  65 bias=-7116.1 ms p95|e|=12665.8 ms audio agree=0.00%
+  [A_pre] 221124 sid1 S4_FastSlowGated steady_t>=8s: n= 492 bias= -808.6 ms p95|e|=6119.2 ms audio agree=42.86%
+  [A_pre] 221124 sid1 S4_FastSlowGated frozen_t>=50s: n= 215 bias=   +0.4 ms p95|e|=   1.4 ms audio agree=42.86%
+  [A_pre] 221124 sid1 S5_LightGateKF   startup_t<8s: n=  75 bias=-3558.5 ms p95|e|=11032.5 ms audio agree=0.00%
+  [A_pre] 221124 sid1 S5_LightGateKF   steady_t>=8s: n= 603 bias=-2864.7 ms p95|e|=19772.6 ms audio agree=33.33%
+  [A_pre] 221124 sid1 S5_LightGateKF   frozen_t>=50s: n= 385 bias=   +0.3 ms p95|e|=   1.1 ms audio agree=33.33%
+  [A_pre] 221124 sid1 FUS              startup_t<8s: n=  71 bias= -330.1 ms p95|e|=6319.5 ms audio agree=0.00%
+  [A_pre] 221124 sid1 FUS              steady_t>=8s: n= 261 bias=  -17.9 ms p95|e|= 599.4 ms audio agree=56.25%
+  [A_pre] 221124 sid1 FUS              frozen_t>=50s: n= 211 bias=  -27.4 ms p95|e|=  59.1 ms audio agree=56.25%
+  [A_pre] 221420 sid0 D01_Kalman_CV    startup_t<8s: n=  63 bias=+6397.9 ms p95|e|=289106.3 ms audio agree=0.00%
+  [A_pre] 221420 sid0 D01_Kalman_CV    steady_t>=8s: n= 369 bias=  +16.0 ms p95|e|=  87.9 ms audio agree=83.33%
+  [A_pre] 221420 sid0 D01_Kalman_CV    frozen_t>=50s: n= 290 bias=   +0.6 ms p95|e|=   1.2 ms audio agree=83.33%
+  [A_pre] 221420 sid0 C03_CV_tracker   startup_t<8s: n=  59 bias=+30455.5 ms p95|e|=375713.2 ms audio agree=0.00%
+  [A_pre] 221420 sid0 C03_CV_tracker   steady_t>=8s: n= 326 bias=  +16.7 ms p95|e|= 101.2 ms audio agree=75.00%
+  [A_pre] 221420 sid0 C03_CV_tracker   frozen_t>=50s: n= 263 bias=   +1.7 ms p95|e|=  46.5 ms audio agree=75.00%
+  [A_pre] 221420 sid0 S4_FastSlowGated startup_t<8s: n= 131 bias=-8681.2 ms p95|e|=13839.5 ms audio agree=0.00%
+  [A_pre] 221420 sid0 S4_FastSlowGated steady_t>=8s: n= 240 bias=  +12.1 ms p95|e|=  85.1 ms audio agree=75.00%
+  [A_pre] 221420 sid0 S4_FastSlowGated frozen_t>=50s: n= 205 bias=   +0.9 ms p95|e|=   2.1 ms audio agree=75.00%
+  [A_pre] 221420 sid0 S5_LightGateKF   startup_t<8s: n=  81 bias=-16597.0 ms p95|e|=23629.4 ms audio agree=0.00%
+  [A_pre] 221420 sid0 S5_LightGateKF   steady_t>=8s: n= 440 bias=+1326.8 ms p95|e|=9995.0 ms audio agree=50.00%
+  [A_pre] 221420 sid0 S5_LightGateKF   frozen_t>=50s: n= 324 bias=   +0.6 ms p95|e|=   1.3 ms audio agree=50.00%
+  [A_pre] 221420 sid0 FUS              startup_t<8s: n=  60 bias=-2241.5 ms p95|e|=5493.4 ms audio agree=0.00%
+  [A_pre] 221420 sid0 FUS              steady_t>=8s: n= 227 bias=  +13.4 ms p95|e|= 175.3 ms audio agree=83.33%
+  [A_pre] 221420 sid0 FUS              frozen_t>=50s: n= 191 bias=  -10.4 ms p95|e|=  24.8 ms audio agree=83.33%
+  [A_pre] 221420 sid1 D01_Kalman_CV    startup_t<8s: n=  60 bias=-18421.6 ms p95|e|=132289.2 ms audio agree=0.00%
+  [A_pre] 221420 sid1 D01_Kalman_CV    steady_t>=8s: n= 387 bias=   +9.9 ms p95|e|=  54.4 ms audio agree=83.33%
+  [A_pre] 221420 sid1 D01_Kalman_CV    frozen_t>=50s: n= 302 bias=   +0.4 ms p95|e|=   1.1 ms audio agree=83.33%
+  [A_pre] 221420 sid1 C03_CV_tracker   startup_t<8s: n=  57 bias=+16030.1 ms p95|e|=219450.0 ms audio agree=0.00%
+  [A_pre] 221420 sid1 C03_CV_tracker   steady_t>=8s: n= 375 bias=  +12.8 ms p95|e|=  75.4 ms audio agree=50.00%
+  [A_pre] 221420 sid1 C03_CV_tracker   frozen_t>=50s: n= 296 bias=   +2.5 ms p95|e|=  50.8 ms audio agree=50.00%
+  [A_pre] 221420 sid1 S4_FastSlowGated startup_t<8s: n= 127 bias=-6341.3 ms p95|e|=12035.1 ms audio agree=0.00%
+  [A_pre] 221420 sid1 S4_FastSlowGated steady_t>=8s: n= 281 bias=  +24.9 ms p95|e|=  67.4 ms audio agree=42.86%
+  [A_pre] 221420 sid1 S4_FastSlowGated frozen_t>=50s: n= 221 bias=   +0.4 ms p95|e|=   1.6 ms audio agree=42.86%
+  [A_pre] 221420 sid1 S5_LightGateKF   startup_t<8s: n=  81 bias=-10784.5 ms p95|e|=16969.8 ms audio agree=0.00%
+  [A_pre] 221420 sid1 S5_LightGateKF   steady_t>=8s: n= 486 bias=+1845.3 ms p95|e|=13626.7 ms audio agree=50.00%
+  [A_pre] 221420 sid1 S5_LightGateKF   frozen_t>=50s: n= 360 bias=   +0.3 ms p95|e|=   1.3 ms audio agree=50.00%
+  [A_pre] 221420 sid1 FUS              startup_t<8s: n=  55 bias=  -90.0 ms p95|e|=6183.0 ms audio agree=0.00%
+  [A_pre] 221420 sid1 FUS              steady_t>=8s: n= 252 bias=  +14.7 ms p95|e|= 453.9 ms audio agree=17.65%
+  [A_pre] 221420 sid1 FUS              frozen_t>=50s: n= 214 bias=  -17.1 ms p95|e|= 434.7 ms audio agree=17.65%
+  [A_pre] 215709 sid0 D01_Kalman_CV    startup_t<8s: n=  64 bias=+316744.2 ms p95|e|=894502.8 ms audio agree=0.00%
+  [A_pre] 215709 sid0 D01_Kalman_CV    steady_t>=8s: n= 514 bias=   +0.0 ms p95|e|=   1.0 ms audio agree=100.00%
+  [A_pre] 215709 sid0 D01_Kalman_CV    frozen_t>=50s: n= 514 bias=   +0.0 ms p95|e|=   1.0 ms audio agree=100.00%
+  [A_pre] 215709 sid0 C03_CV_tracker   startup_t<8s: n=  47 bias=-7823.0 ms p95|e|=145541.2 ms audio agree=0.00%
+  [A_pre] 215709 sid0 C03_CV_tracker   steady_t>=8s: n= 468 bias=  -57.6 ms p95|e|= 331.5 ms audio agree=7.89%
+  [A_pre] 215709 sid0 C03_CV_tracker   frozen_t>=50s: n= 468 bias=  -57.6 ms p95|e|= 331.5 ms audio agree=7.89%
+  [A_pre] 215709 sid0 S4_FastSlowGated startup_t<8s: n=  75 bias=-5817.7 ms p95|e|=9944.3 ms audio agree=0.00%
+  [A_pre] 215709 sid0 S4_FastSlowGated steady_t>=8s: n= 454 bias= -349.0 ms p95|e|=3997.5 ms audio agree=88.37%
+  [A_pre] 215709 sid0 S4_FastSlowGated frozen_t>=50s: n= 318 bias=   +0.0 ms p95|e|=   1.1 ms audio agree=88.37%
+  [A_pre] 215709 sid0 S5_LightGateKF   startup_t<8s: n=  70 bias=-8485.1 ms p95|e|=14496.9 ms audio agree=0.00%
+  [A_pre] 215709 sid0 S5_LightGateKF   steady_t>=8s: n= 513 bias= -824.1 ms p95|e|=7762.0 ms audio agree=90.48%
+  [A_pre] 215709 sid0 S5_LightGateKF   frozen_t>=50s: n= 347 bias=   -0.0 ms p95|e|=   1.0 ms audio agree=90.48%
+  [A_pre] 215709 sid0 FUS              startup_t<8s: n=  46 bias=-1052.9 ms p95|e|=4622.4 ms audio agree=0.00%
+  [A_pre] 215709 sid0 FUS              steady_t>=8s: n= 713 bias=  -25.5 ms p95|e|= 592.6 ms audio agree=81.82%
+  [A_pre] 215709 sid0 FUS              frozen_t>=50s: n= 713 bias=  -25.5 ms p95|e|= 592.6 ms audio agree=81.82%
+  [A_pre] 215709 sid1 D01_Kalman_CV    startup_t<8s: n=  60 bias=+199589.6 ms p95|e|=526243.2 ms audio agree=0.00%
+  [A_pre] 215709 sid1 D01_Kalman_CV    steady_t>=8s: n= 586 bias=   +1.6 ms p95|e|=   1.1 ms audio agree=95.83%
+  [A_pre] 215709 sid1 D01_Kalman_CV    frozen_t>=50s: n= 578 bias=   +0.1 ms p95|e|=   1.1 ms audio agree=95.83%
+  [A_pre] 215709 sid1 C03_CV_tracker   startup_t<8s: n=  54 bias=-5537.8 ms p95|e|=90144.9 ms audio agree=0.00%
+  [A_pre] 215709 sid1 C03_CV_tracker   steady_t>=8s: n= 532 bias=  -73.6 ms p95|e|= 405.6 ms audio agree=11.36%
+  [A_pre] 215709 sid1 C03_CV_tracker   frozen_t>=50s: n= 529 bias=  -75.5 ms p95|e|= 405.7 ms audio agree=11.36%
+  [A_pre] 215709 sid1 S4_FastSlowGated startup_t<8s: n=  66 bias=-5089.7 ms p95|e|=10081.8 ms audio agree=0.00%
+  [A_pre] 215709 sid1 S4_FastSlowGated steady_t>=8s: n= 503 bias= -366.3 ms p95|e|=4266.1 ms audio agree=88.37%
+  [A_pre] 215709 sid1 S4_FastSlowGated frozen_t>=50s: n= 345 bias=   -0.0 ms p95|e|=   1.1 ms audio agree=88.37%
+  [A_pre] 215709 sid1 S5_LightGateKF   startup_t<8s: n=  70 bias=-4405.5 ms p95|e|=10189.4 ms audio agree=0.00%
+  [A_pre] 215709 sid1 S5_LightGateKF   steady_t>=8s: n= 550 bias=-1914.3 ms p95|e|=11522.7 ms audio agree=90.48%
+  [A_pre] 215709 sid1 S5_LightGateKF   frozen_t>=50s: n= 375 bias=   +0.0 ms p95|e|=   1.1 ms audio agree=90.48%
+  [A_pre] 215709 sid1 FUS              startup_t<8s: n=  44 bias= -614.5 ms p95|e|=5472.3 ms audio agree=0.00%
+  [A_pre] 215709 sid1 FUS              steady_t>=8s: n= 698 bias=   -9.5 ms p95|e|= 141.1 ms audio agree=92.86%
+  [A_pre] 215709 sid1 FUS              frozen_t>=50s: n= 698 bias=   -9.5 ms p95|e|= 141.1 ms audio agree=92.86%
+== Part B: formal equivalence, post-p0fix era chain (isa_fw10 + seed, DEF-011 scale) ==
+  [B_pos] 234521 sid0 D01_Kalman_CV    startup_t<8s: n=   5 bias=-5961182.0 ms p95|e|=15222929.2 ms audio agree=0.00%
+  [B_pos] 234521 sid0 D01_Kalman_CV    steady_t>=8s: n=  24 bias=   +0.3 ms p95|e|=   1.0 ms audio agree=100.00%
+  [B_pos] 234521 sid0 C03_CV_tracker   startup_t<8s: n=   2 bias=+104652.2 ms p95|e|=112672.6 ms audio agree=0.00%
+  [B_pos] 234521 sid0 C03_CV_tracker   steady_t>=8s: n=  24 bias=  -24.7 ms p95|e|=  71.0 ms audio agree=14.29%
+  [B_pos] 234521 sid0 S4_FastSlowGated startup_t<8s: n=   1 bias=-7228.4 ms p95|e|=7228.4 ms audio agree=0.00%
+  [B_pos] 234521 sid0 S4_FastSlowGated steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234521 sid0 S5_LightGateKF   startup_t<8s: n=   1 bias=-2403.0 ms p95|e|=2403.0 ms audio agree=0.00%
+  [B_pos] 234521 sid0 S5_LightGateKF   steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234521 sid0 FUS              startup_t<8s: n=   2 bias= +246.9 ms p95|e|= 402.7 ms audio agree=50.00%
+  [B_pos] 234521 sid0 FUS              steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234521 sid1 D01_Kalman_CV    startup_t<8s: n=   7 bias=-4295505.2 ms p95|e|=9649679.7 ms audio agree=16.67%
+  [B_pos] 234521 sid1 D01_Kalman_CV    steady_t>=8s: n=  37 bias=   -0.0 ms p95|e|=   1.0 ms audio agree=100.00%
+  [B_pos] 234521 sid1 C03_CV_tracker   startup_t<8s: n=   4 bias=-406479.3 ms p95|e|=836087.5 ms audio agree=0.00%
+  [B_pos] 234521 sid1 C03_CV_tracker   steady_t>=8s: n=  26 bias=  -34.2 ms p95|e|=  84.2 ms audio agree=10.00%
+  [B_pos] 234521 sid1 S4_FastSlowGated startup_t<8s: n=   4 bias=-6481.6 ms p95|e|=8750.8 ms audio agree=0.00%
+  [B_pos] 234521 sid1 S4_FastSlowGated steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234521 sid1 S5_LightGateKF   startup_t<8s: n=   3 bias=-4358.4 ms p95|e|=5650.9 ms audio agree=0.00%
+  [B_pos] 234521 sid1 S5_LightGateKF   steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234521 sid1 FUS              startup_t<8s: n=   3 bias= -149.6 ms p95|e|= 386.6 ms audio agree=0.00%
+  [B_pos] 234521 sid1 FUS              steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 D01_Kalman_CV    startup_t<8s: n=   3 bias=  +61.2 ms p95|e|=  69.2 ms audio agree=100.00%
+  [B_pos] 234944 sid0 D01_Kalman_CV    steady_t>=8s: n=   4 bias=   -0.5 ms p95|e|=   1.0 ms audio agree=100.00%
+  [B_pos] 234944 sid0 C03_CV_tracker   startup_t<8s: n=   2 bias= +741.5 ms p95|e|= 829.0 ms audio agree=0.00%
+  [B_pos] 234944 sid0 C03_CV_tracker   steady_t>=8s: n=   3 bias=  -45.5 ms p95|e|=  76.0 ms audio agree=0.00%
+  [B_pos] 234944 sid0 S4_FastSlowGated startup_t<8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 S4_FastSlowGated steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 S5_LightGateKF   startup_t<8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 S5_LightGateKF   steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 FUS              startup_t<8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid0 FUS              steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid1 D01_Kalman_CV    startup_t<8s: n=   5 bias=  +12.4 ms p95|e|=  19.1 ms audio agree=100.00%
+  [B_pos] 234944 sid1 D01_Kalman_CV    steady_t>=8s: n=  20 bias=   -0.2 ms p95|e|=   1.0 ms audio agree=100.00%
+  [B_pos] 234944 sid1 C03_CV_tracker   startup_t<8s: n=   6 bias= +313.2 ms p95|e|= 373.6 ms audio agree=0.00%
+  [B_pos] 234944 sid1 C03_CV_tracker   steady_t>=8s: n=  16 bias=  -39.7 ms p95|e|= 105.4 ms audio agree=50.00%
+  [B_pos] 234944 sid1 S4_FastSlowGated startup_t<8s: n=   3 bias=-14300.3 ms p95|e|=14436.5 ms audio agree=0.00%
+  [B_pos] 234944 sid1 S4_FastSlowGated steady_t>=8s: n=   2 bias=-29671.6 ms p95|e|=29782.2 ms audio agree=0.00%
+  [B_pos] 234944 sid1 S5_LightGateKF   startup_t<8s: n=   3 bias=-35525.5 ms p95|e|=35760.9 ms audio agree=0.00%
+  [B_pos] 234944 sid1 S5_LightGateKF   steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+  [B_pos] 234944 sid1 FUS              startup_t<8s: n=   7 bias= -264.5 ms p95|e|= 516.2 ms audio agree=0.00%
+  [B_pos] 234944 sid1 FUS              steady_t>=8s: n=   0 bias=   +nan ms p95|e|=   nan ms audio agree=0.00%
+wrote C:\Users\zhang\OneDrive\Documents\Raghav\Engineeirng projects\Vario USB\Kimi Workbook\Vario USB\filter_benchmark\bench6\results\65_mcu_equiv.csv (130 rows)
+
+== steady-state summary (t>=8s) ==
+A_pre_p0fix_era_chain: vel bias -165.4 mm/s, p95|e| 3303.1 mm/s, audio agree 62.40%, n_tones 12899
+B_post_p0fix_era_chain: vel bias -3312.9 mm/s, p95|e| 3347.0 mm/s, audio agree 23.71%, n_tones 156

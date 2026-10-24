@@ -115,3 +115,55 @@ Verification levels:
   seconds. Distinct from DEF-001 (which was systematic for 50 s, now gone). Mitigated by
   keeping the board still at capture start; min-on-time/hold audio policy tuning deferred
   to the audio-benchmark phase.
+- **Mechanism (2026-10-24, Bench 6):** firmware boots with d2 seeded at
+  prom[5]·256 (20 °C) until the first T frame; the compensation step at that
+  frame produces the capture-start altitude step that rings the estimators
+  (tones clamp at +6.67 m/s; amplified to −1.5e4 m/s transient under
+  DEF-011). Reproduced in replay by `seed_d2=True` (bench6 streams); startup
+  (t < 8 s) excluded from all scoring and reported separately.
+
+## DEF-011 — `compensate_pa` returns 10× pressure scale; post-p0fix velocities ×1.5498, absolute altitude garbage
+- **Status:** OPEN (masked for a firmware generation; must fix in the BMP581 integration build)
+- **Found:** 2026-10-24 (Bench 6 MCU-equivalence, `filter_benchmark/bench6/equiv6.py`)
+- **Component:** `esp-idf/vario/main/baro_proc.c::compensate_pa` returns `p01mbar*10.0`
+  while the Python reference (`analysis/common.py`) returns `p*1.0` — a 10× scale
+  deviation.
+- **Masking history:** under the moving-p0 firmware (pre-DEF-001-fix) the ratio p/p0
+  cancelled the scale, so all pre-p0fix MCU tone streams are true-scale and valid.
+  The p0fix hardcoded 101325 Pa (common-line units) against the still-10× pressure,
+  so post-fix firmware scales velocities by exactly 10^0.1903 = 1.5498 and reports
+  absolute altitude ≈ −23 725 m.
+- **Impact:** post-p0fix MCU-side absolute altitude is garbage; velocity-shaped
+  behaviour is self-consistent (×1.5498). Bench captures remain valid for
+  velocity/audio analysis; replay equivalence must use `reference='isa_fw10'`.
+- **Evidence:** `filter_benchmark/bench6/results/65_mcu_equiv.csv`,
+  `fig13_mcu_equivalence.png`; archived build README
+  `esp-idf/firmware_archive/vario_idf_MS5611x2_MPU6050_p0fix_r8e79e68_20261023/`.
+- **Planned fix:** single scale constant in the sensor-integration build
+  (BMP581/LSM6DSV16X); re-run `equiv6.py` with the common-scale chain.
+
+## DEF-012 — Virtual-audio tone channel asymmetric: descents < −0.22 m/s emit no V-frames
+- **Status:** DOCUMENTED (design constraint, not a bug per se)
+- **Found:** 2026-10-24 (Bench 6 equivalence tone inspection)
+- **Detail:** implied v = (f−500)/450 with f clamped to [400, 3500] Hz represents
+  v ∈ [−0.22, +6.67] m/s; the firmware suppresses tones below 400 Hz. MCU tone
+  streams are blind to strong sink; sink audio behaviour must be scored from
+  replay audio state machines, not MCU tones.
+
+## DEF-013 — Pre-p0fix gate-decision chaos: S4/S5 (mildly C03/FUS) replay tones diverge from MCU in the moving-p0 window
+- **Status:** CLOSED (root-caused to era; does not affect scoring)
+- **Found:** 2026-10-24 (`equiv6.py` Part A, t = 8–50 s of pre-p0fix captures only)
+- **Detail:** D01 (the plain Kalman inside both stacks) matches MCU tones to ~1 mm/s
+  everywhere, so the raw reconstruction is exact; the divergence lives in
+  discontinuous gate latches amplifying sub-LSB reconstruction micro-differences
+  while the defective moving reference was active. Frozen-p0 era (t ≥ 50 s) matches
+  to p95 1.0–60 mm/s for all five estimators on all captures.
+- **Impact:** old-firmware equivalence bookkeeping only; all scoring uses fixed-ISA
+  streams and is unaffected.
+
+### DEF-010 update (2026-10-24) — mechanism identified — the firmware boots with
+  d2 seeded at prom[5]·256 (20 °C) until the first T frame; the compensation step
+  at that frame produces the capture-start altitude step that rings the estimators
+  (tones clamp at +6.67 m/s; amplified to −1.5×10⁴ m/s transient under DEF-011).
+  Reproduced in replay by `seed_d2=True`; startup (t < 8 s) is excluded from all
+  scoring and reported separately.

@@ -1,0 +1,23 @@
+{
+  "label": "idf_handtest3",
+  "started_utc": "2026-10-23T10:03:23.920991+00:00",
+  "port": "COM5",
+  "baud": 921600,
+  "csv": "20261023_180321_idf_handtest3.csv",
+  "device": {
+    "config": "status=health_fail_halt",
+    "firmware": "vario-idf 0.1.0",
+    "prom_0": "0,0,0,0,0,0",
+    "prom_1": "53519,53000,33254,30158,31701,28056"
+  },
+  "stats": {
+    "lines_written": 158,
+    "bad_lines": 1,
+    "seq_drops": 0,
+    "bytes_read": 0,
+    "errors": {
+      "1": 158
+    },
+    "elapsed_s": 114.42
+  }
+}
