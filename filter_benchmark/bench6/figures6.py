@@ -253,7 +253,8 @@ def f06_handtest():
                             height_ratios=[1.2, 0.9, 1.6, 0.55, 0.55])
     axs[0].plot(t, tr["alt"], lw=0.8, color="k")
     axs[0].set_ylabel("alt [m]")
-    axs[0].set_title("handtest3 — static + slow moves + toss (sid0)")
+    axs[0].set_title("handtest3 — static + gentle slow moves; no strong "
+                     "events under corrected reference (DEF-014)")
     axs[1].plot(t_imu, an, lw=0.3, color="0.35")
     axs[1].set_ylabel("|a|-g [m/s²]")
     axs[1].set_ylim(-14, 14)
@@ -263,11 +264,11 @@ def f06_handtest():
     for n, c in zip(BANK, ["#2ca02c", "#1f77b4", "#d62728", "#8c564b",
                            "#9467bd"]):
         axs[2].plot(t, tr[f"v::{n}"], lw=0.6, label=n.split("_")[0], color=c)
-    for (a, b) in np.atleast_2d(tr["events"]):
+    for (a, b) in np.atleast_2d(tr["events"]).reshape(-1, 2):
         for ax in axs:
             ax.axvspan(a, b, color="skyblue", alpha=0.3)
     if "slow_blocks" in tr:
-        for (a, b) in np.atleast_2d(tr["slow_blocks"]):
+        for (a, b) in np.atleast_2d(tr["slow_blocks"]).reshape(-1, 2):
             axs[2].axvspan(a, b, color="green", alpha=0.18)
     axs[2].set_ylabel("v [m/s]")
     axs[2].set_ylim(-4.5, 4.5)
@@ -316,19 +317,21 @@ def med_session(df, col, sessions=None):
 
 
 def f08_scatter_noise_onset():
+    # Right panel uses slow-block |bias| because the old "handtest onset"
+    # metric was a DEF-014 boundary artifact of the reference smoother and
+    # no longer exists (no events under the corrected reference).
     elev = pd.read_csv(RES / "61_elevator_summary.csv")
     stat = pd.read_csv(RES / "60_static.csv")
     hand = pd.read_csv(RES / "62_handtest.csv")
     rest = med_session(stat, "rest_rms")
     rise = med_session(elev[elev.session.str.contains("221124")], "rise_med_s")
-    onset = med_session(hand, "onset_med_s")
-    srms = med_session(hand, "static_rms")
+    slow_bias = med_session(hand, "slow_bias_med").abs()
     fig, axs = plt.subplots(1, 2, figsize=(11, 4.6), sharey=False)
     for ax, (y, ylab, title) in zip(
             axs, [(rise, "elevator rise proxy [s]", "noise vs response "
                    "(elevator)"),
-                  (onset, "handtest onset [s]", "noise vs response "
-                   "(handtest)")]):
+                  (slow_bias, "|slow-block bias| [m/s]", "noise vs slow-block "
+                   "tracking (handtest3)")]):
         for n in rest.index:
             if n not in y.index or not np.isfinite(y[n]):
                 continue
@@ -340,7 +343,7 @@ def f08_scatter_noise_onset():
         ax.set_xlabel("static rest RMS [m/s] (median, log scale)")
         ax.set_ylabel(ylab)
         ax.set_title(title, fontsize=9)
-    save(fig, "fig08_scatter_noise_vs_onset.png")
+    save(fig, "fig08_scatter_noise_vs_slowbias.png")
 
 
 def f09_scatter_on_off():
@@ -543,9 +546,11 @@ def f14_failures():
     tr = load_trc(HT, 0)
     t = tr["t"]
     fig, axs = plt.subplots(2, 2, figsize=(11.5, 7.6))
-    # (a) S2 freeze on toss
+    # (a) stacked filters across the genuine slow-descent block (the old
+    # "toss" window 148.2-151.9 s was a DEF-014 reference artifact; no toss
+    # occurred in handtest3 -- IMU |a|-g max 0.17 m/s^2 there)
     ax = axs[0, 0]
-    m = (t >= 140) & (t <= 175)
+    m = (t >= 100) & (t <= 120)
     if "v_ref" in tr:
         ax.plot(t[m], tr["v_ref"][m], lw=0.9, color="k", label="ref")
     if "v::S2_DualTimescale" in tr:
@@ -554,8 +559,11 @@ def f14_failures():
     if "v::S4_FastSlowGated" in tr:
         ax.plot(t[m], tr["v::S4_FastSlowGated"][m], lw=0.8, color="#d62728",
                 label="S4")
-    ax.set_title("Failure mode — stacked filters across the toss "
-                 "(148.2–151.9 s)")
+    if "v::D01_Kalman_CV" in tr:
+        ax.plot(t[m], tr["v::D01_Kalman_CV"][m], lw=0.8, color="#2ca02c",
+                label="D01")
+    ax.set_title("Slow descent block 107.9-114.3 s (ref -0.17 m/s) — stacked "
+                 "filters + D01")
     ax.legend(fontsize=7)
     ax.set_ylabel("v [m/s]")
     # (b) startup flap on p0fix static
@@ -595,7 +603,7 @@ def f14_failures():
         if f"v::{n}" in tr:
             ax.plot(t[m], tr[f"v::{n}"][m], lw=0.7, color=c,
                     label=n.split("_")[0])
-    for (a, b) in np.atleast_2d(tr["slow_blocks"]):
+    for (a, b) in np.atleast_2d(tr["slow_blocks"]).reshape(-1, 2):
         if b > 60 and a < 120:
             ax.axvspan(a, b, color="green", alpha=0.15)
     ax.set_title("Slow sustained blocks (66–69, 108–114 s) — thermalling "
@@ -669,7 +677,10 @@ def f17_rankings():
         "rise": r1.groupby("candidate").rise_med_s.median(),
         "exit": r1.groupby("candidate").exit_med_s.median(),
         "dwell_false": r1.groupby("candidate").audio_dwell_false_on_s.median(),
-        "onset": hand.groupby("candidate").onset_med_s.median(),
+        # DEF-014: the old "onset" column was a reference-smoother boundary
+        # artifact and is all-NaN now; replaced by slow-block |bias|, a real
+        # physical tracking metric from the same capture.
+        "slow_bias": hand.groupby("candidate").slow_bias_med.median().abs(),
         "static_false": hand.groupby("candidate").static_false_on_per_hr.median(),
     }).replace([np.inf, -np.inf], np.nan)
     # rank-normalized composite: percentile rank per column (lower better)

@@ -256,10 +256,20 @@ def bline_cpu(stem):
 # ---------------------------------------------------- derived references ----
 def reference_v(t, alt, win_s=1.0):
     """1-s Gaussian-smoothed barometric derivative — the DERIVED reference
-    (src/metrics.py, fixed documented method). Descriptive proxy, not ground
-    truth. Duplicate timestamps are collapsed first (they would divide-by-zero
-    np.gradient and manufacture infinite reference velocities)."""
-    import metrics
+    (src/metrics.py kernel, fixed documented method). Descriptive proxy, not
+    ground truth. Duplicate timestamps are collapsed first (they would
+    divide-by-zero np.gradient and manufacture infinite reference velocities).
+
+    DEF-014: np.convolve(mode="same") zero-pads, so the raw method's smoothed
+    altitude ramps from ~50 % of true value over the first/last ~3*win_s of
+    the stream, manufacturing phantom reference velocity at both boundaries
+    (the old "startup event" in handtest3 was this artifact, and the tail
+    artifact contaminated the end-of-capture toss). Fixed here by dividing by
+    the effective window weight (standard edge normalisation); the archived
+    Phase 2-5 src/metrics.py is intentionally left frozen."""
+    dt = np.median(np.diff(t))
+    n = max(int(round(win_s / dt)), 3)
+    k = np.exp(-0.5 * (np.arange(-3 * n, 3 * n + 1) / n) ** 2)
     tu, inv, counts = np.unique(t, return_inverse=True, return_counts=True)
     if len(tu) != len(t):
         alt_u = np.zeros(len(tu))
@@ -267,8 +277,9 @@ def reference_v(t, alt, win_s=1.0):
         alt_u /= counts
     else:
         tu, alt_u = t, alt
-    v_u, alt_s = metrics.reference_v(tu, alt_u, win_s=win_s)
-    return v_u[inv], alt_s[inv]
+    alt_s = np.convolve(alt_u, k, mode="same") / np.convolve(
+        np.ones_like(alt_u), k, mode="same")
+    return np.gradient(alt_s, tu)[inv], alt_s[inv]
 
 
 # Second fixed documented reference for slow sustained motion (thermalling-

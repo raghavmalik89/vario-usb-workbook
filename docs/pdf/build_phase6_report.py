@@ -71,6 +71,8 @@ story.append(lib.P(
 story.append(lib.P(
     "Status: complete frozen-configuration study with controls. "
     "<b>No estimator is selected or frozen.</b> "
+    "This PDF is the DEF-014-corrected re-issue: the handtest reference-smoother "
+    "boundary artifact is fixed and rankings are re-computed (§3.3, §6). "
     "Scripts: filter_benchmark/bench6/ (run6 → equiv6 → rate6 → tune6 → "
     "mcucpu6 → figures6); re-run on BMP581/LSM6DSV16X captures by registering "
     "the new stems in datasets.py.", st["subtitle"]))
@@ -91,7 +93,7 @@ story.append(tab(
     ["Capture", "Role", "Split", "Quality"],
     [["221124_idf_elevator_2x", "elevator run 1: 4 legs ±38.2 m, −1.72/+1.66 m/s", "train", "CLEAN"],
      ["221420_idf_elevator_2x", "elevator run 2 (same profile)", "validation", "CLEAN (3× 20 ms gaps)"],
-     ["215709_idf_handtest3", "static + slow moves + toss 148–152 s", "train", "GOOD (7× 20 ms gaps)"],
+     ["215709_idf_handtest3", "static + gentle slow moves; 'toss' was DEF-014 artifact", "train", "GOOD (7× 20 ms gaps)"],
      ["234521_idf_p0fix_static", "static 75.3 s", "validation", "CLEAN"],
      ["234944_idf_bbuf_check", "static 20.2 s", "validation", "CLEAN"],
      ["221109_idf_elevator_2x", "aborted capture", "excluded", "USB-stall dropouts (DEF-008)"],
@@ -199,14 +201,19 @@ story += fig("fig02_velocity_traces_all_run1.png", 16.2,
 
 story.append(h2("3.3 Handtest, virtual audio, and CPU"))
 story.append(body(
-    "Handtest: fastest onsets S2/S4/D01 (0.07–0.08 s); slowest S1/S5/FUS "
-    "(0.21–0.23 s); C03/C01 unscored (event-metric artefact). Slow sustained blocks "
-    "(66–69, 108–114 s) tracked with |bias| ≤ 0.05 m/s by the bank. Toss recovery: all "
-    "bank filters re-settle within the metric window. Static-silence false latches "
-    "(relative ranking): S2 18/h, S1 166/h, bank ≈310–350/h, FUS 629/h."))
+    "Handtest (corrected reference, DEF-014): the zero-padded reference smoother had "
+    "fabricated two phantom events (startup 0–3.8 s; toss 148.2–151.9 s, fake ≈4 m/s "
+    "peak); the IMU refutes them (|a|−g ≤ 0.17 m/s² at 144–152 s — no toss). Event "
+    "onset/toss metrics are withdrawn. The discriminative handtest metric is slow-block "
+    "bias: B02 −0.014, C03 −0.030, E06 −0.032, D01 −0.037 m/s (tight); S4 −0.116, "
+    "S5 −0.121, FUS −0.182; S2 +0.32 and S1 +0.63 m/s — both report climb through a "
+    "slow descent (S1 audio ON 0.60–0.72 of the block — a slow-descent false-lift). "
+    "Static-silence false latches (relative): S2 18/h, S1 166/h, bank ≈310–350/h, FUS "
+    "629/h."))
 story += fig("fig06_handtest_panel.png", 15.5,
-             "Handtest3: altitude, IMU acceleration, bank velocity traces with event "
-             "and slow-block shading, and virtual-audio overlays.")
+             "Handtest3: altitude, IMU acceleration, bank velocity traces with "
+             "slow-block shading (no events under corrected reference, DEF-014), and "
+             "virtual-audio overlays.")
 story.append(body(
     "Virtual audio, separately: dwell false-ON between legs 2.0–2.4 s/run across the "
     "viable family (FUS 4.95) — the post-p0fix residual of the DEF-001/007 mechanism "
@@ -242,7 +249,7 @@ story += fig("fig15_rate_control.png", 16.0,
 story.append(h1("5. Leakage-controlled tuning (NOT a freeze)"))
 story.append(tab(
     ["Family", "Train pick", "Validation effect vs frozen"],
-    [["D01_Kalman_CV", "q=0.3", "rest RMS 0.057→0.036, exit 6.8→4.8 s, rise 1.19→1.48 s"],
+    [["D01_Kalman_CV", "q=0.3", "rest RMS 0.057→0.028, exit 6.8→3.8 s, rise 1.19→1.70 s"],
      ["S5_LightGateKF", "q=0.1", "rest RMS 0.037→0.025, exit 5.7→3.7 s, rise 1.33→1.65 s"],
      ["S4_FastSlowGated", "tau_fast=0.5", "mixed (exit better, rise/rms worse) — not recommended"],
      ["C03_CV_tracker", "frozen best", "all alternatives ≥ +18 % composite"]],
@@ -256,24 +263,29 @@ story += fig("fig18_tuning_train_val.png", 16.0,
 
 story.append(h1("6. Rankings vs Phases 2–5 and failure modes"))
 story.append(body(
-    "Composite (7 metrics, percentile-normalized): <b>C03, C01, S2, S1, S4</b> top-5; "
-    "D01 10th, S5 11th, FUS 19th. Per-metric leaders: rest noise B02_project_kalman / "
-    "C02 / C01; response E06; exit C02/C01 (floored proxy); robustness cluster "
-    "S1/S4/S5 within noise of each other."))
+    "Composite (7 metrics, percentile-normalized; slow-block |bias| replaces the "
+    "phantom onset metric after DEF-014): <b>C03, C01, B02_project_kalman, E06, "
+    "S2</b> top-5; S4 7th, S1 8th, D01 9th, S5 12th, FUS 21st. Per-metric leaders: rest "
+    "noise B02_project_kalman / C02 / C01; response E06; exit C02/C01 (floored proxy); "
+    "slow-block tracking B02/E06/C03/D01 (|bias| ≤ 0.04 m/s). "
+    "<b>Interpretation flag: S2 is 5th despite its known freeze-trap defect</b> — the "
+    "composite rewards its low static chatter; ranking position is not endorsement."))
 story.append(body(
     "What changed and why: (1) D01's rest floor 0.101→0.057 m/s — the old number was the "
     "defective reference, not the filter. (2) S5's Phase-4 stand-out status does not "
     "survive corrected streams: the S1/S4/S5 cluster is tight (0.035–0.037) and S5's "
-    "onset is slow. (3) S1's missed-lift weakness is gone on these captures but its "
-    "onset is now slowest. (4) C03 rises to the composite top — its Phase-2/3 weaknesses "
+    "slow-block bias is mid-pack. (3) S1's defect is now quantified, not shifted: "
+    "+0.63 m/s slow-descent false-lift — masked in the first analysis by the DEF-014 "
+    "phantom onset metric. (4) C03 rises to the composite top — its Phase-2/3 weaknesses "
     "were firmware-era artefacts (DEF-002 CPU, DEF-001 false-lift), both fixed. "
     "(5) FUS shows no measurable benefit on vibration-free data; the fusion value "
     "proposition stays open for real-flight data. (6) B02's collapse is a rate artefact."))
 story += fig("fig17_ranking_heatmap.png", 14.5,
              "Normalized metric ranks (rows sorted by composite) with raw medians.")
 story += fig("fig14_failure_modes.png", 16.0,
-             "Failure modes: S2 freeze-trap across the toss, startup flap (DEF-010), "
-             "S3 gate chatter, slow-block behaviour.")
+             "Failure modes: S1 slow-descent false-lift (surfaced by the DEF-014 "
+             "correction), S2 freeze-trap, startup flap (DEF-010), S3 gate chatter, "
+             "slow-block behaviour.")
 
 story.append(h1("7. Limitations and next phase"))
 story.append(body(
@@ -281,16 +293,20 @@ story.append(body(
     "exit is floored at ≈6.8 s by dwell wobble. Handtest static window contains operator "
     "micro-movements; false-latch rates are relative rankings. Post-p0fix dynamic "
     "captures do not exist yet — S4/S5/FUS MCU audio equivalence on transitions is "
-    "vacuous, not failed. Onset NaN (C03/C01) is an event-metric artefact, reported as "
-    "unscored. Fusion evaluation is baro-reference-bound. The two clones differ; all "
+    "vacuous, not failed. Handtest3 has no strong events under the corrected reference "
+    "(DEF-014); event-relative response latency is not measurable on the current "
+    "captures. Fusion evaluation is baro-reference-bound. The two clones differ; all "
     "medians are reported over both sids."))
 story.append(body(
     "<b>Next phase (BMP581 + LSM6DSV16X):</b> register the new captures in "
     "datasets.py and re-run the pipeline; the registry is the only sensor-specific "
     "file. The reference firmware for the current sensor set is archived at "
     "esp-idf/firmware_archive/vario_idf_MS5611x2_MPU6050_p0fix_r8e79e68_20261023/ "
-    "(binaries + SHA-256 + README) for A/B flashing. DEF-011 must be fixed in the "
-    "sensor-integration build before any absolute-altitude comparison."))
+    "(binaries + SHA-256 + README) for A/B flashing. <b>Hard gate: DEF-011 (10× "
+    "pressure scale) must be fixed before any further physical validation, "
+    "absolute-altitude comparison, or cross-sensor benchmark.</b> The top-5 MCU "
+    "efficiency benchmark is deferred until the new sensors arrive (on-target CPU data "
+    "shows processing is not the present bottleneck)."))
 
 first, later = lib.header_footer("")
 doc = SimpleDocTemplate(str(OUT), pagesize=lib.A4, topMargin=2.2 * cm,

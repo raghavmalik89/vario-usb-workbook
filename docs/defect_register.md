@@ -167,3 +167,19 @@ Verification levels:
   (tones clamp at +6.67 m/s; amplified to −1.5×10⁴ m/s transient under DEF-011).
   Reproduced in replay by `seed_d2=True`; startup (t < 8 s) is excluded from all
   scoring and reported separately.
+
+## DEF-014 — Reference-smoother boundary artifact: phantom handtest events (startup "event", "toss")
+- **Status:** FIXED in `filter_benchmark/bench6/streams.py::reference_v` (2026-10-24, post-Bench-6-commit correction); archived Phase 2–5 `src/metrics.py` intentionally left frozen as the historical artifact
+- **Found:** 2026-10-24 (post-commit report verification, Bench 6)
+- **Detail:** the ±3 s Gaussian reference smoother behind handtest event metrics used `np.convolve(alt, k, mode="same")` with zero padding. The smoothed altitude ramps from ~50 % of true value over the first/last ~3 s of a stream, manufacturing phantom reference velocity at both boundaries. On handtest3 this created two fictitious events (startup 0–3.8 s; toss 148.2–151.9 s with a fictitious ≈ 4 m/s peak) and two fictitious slow blocks.
+- **Physical refutation:** at 144–152 s IMU |a|−g peaks at 0.17 m/s² and baro altitude moves ±0.5 m — no toss occurred; whole-session altitude span (10–140 s) is 3.36 m of gentle hand motion.
+- **Impact:** handtest onset/release/toss metrics void (withdrawn from the Phase 6 report); composite ranking re-computed with slow-block |bias| replacing the phantom onset term — top-5 changes from (C03, C01, S2, S1, S4) to (C03, C01, B02_project_kalman, E06, S2), exposing S1's real +0.63 m/s slow-descent false-lift. Elevator, static, MCU-equivalence, rate-control and CPU results unaffected (never used the defective smoother).
+- **Fix:** smoother now normalizes by the effective window weight (`np.convolve(alt,k,"same")/np.convolve(ones,k,"same")`). Verified: v_ref head/tail ≈ 0.003–0.009 m/s, zero events, slow blocks unchanged.
+- **Lesson:** any boundary-windowed smoother used for reference derivation must be weight-normalized; event metrics near stream edges are suspect by construction.
+
+## DEF-011 process gate (2026-10-24) — REQUIREMENT before further physical validation
+- DEF-011 (10× pressure scale, velocities ×1.5498, absolute altitude garbage) must be
+  corrected in the sensor-integration build **before any further physical validation
+  campaign, any absolute-altitude comparison, or any cross-sensor benchmark**.
+  Existing bench captures remain valid for velocity/audio analysis via the `isa_fw10`
+  replay chain until the fix lands.

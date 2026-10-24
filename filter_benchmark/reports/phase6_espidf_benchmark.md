@@ -17,7 +17,7 @@ Re-evaluate the entire filter trade space on the clean ESP-IDF captures: 29 stan
 |---|---|---|---|
 | `20261023_221124_idf_elevator_2x` | elevator run 1 (4 legs, ±38.2 m, −1.72/+1.66 m/s) | train | CLEAN: 0 seq gaps, 0 corrupt |
 | `20261023_221420_idf_elevator_2x` | elevator run 2 (same profile) | **validation** | CLEAN: 3 single-frame (20 ms) gaps |
-| `20261023_215709_idf_handtest3` | static + slow moves + toss (148.2–151.9 s) | train | GOOD: 7 single-frame gaps |
+| `20261023_215709_idf_handtest3` | static + gentle slow moves; the "toss" in the first analysis was a reference artifact (DEF-014, §3.5) | train | GOOD: 7 single-frame gaps |
 | `20261023_234521_idf_p0fix_static` | static, 75.3 s | **validation** | CLEAN: 0 gaps |
 | `20261023_234944_idf_bbuf_check` | static, 20.2 s | **validation** | CLEAN: 0 gaps |
 | `20261023_221109_idf_elevator_2x` | — | excluded | ABORTED: USB-stall dropouts (DEF-008), 18 s |
@@ -25,7 +25,7 @@ Re-evaluate the entire filter trade space on the clean ESP-IDF captures: 29 stan
 
 Fault datasets are retained as documented fault-test data (`datasets.py` registry) but excluded from scoring. Both barometers are evaluated independently throughout (the two clones are known to differ; per-sid evaluation is deliberate, `results/64_stream_quality.csv`).
 
-Legs (detected by the proven 1-s boxcar method on sid0 fixed-ISA altitude): run 1 — D1 9.9–33.8 s (−1.72 m/s), A2 51.6–76.2 s (+1.66), D3 95.0–119.0 s (−1.72), A4 136.8–161.3 s (+1.66); run 2 agrees to ±0.1 s. Handtest events (0.4 m/s core): startup 0–3.8 s + toss 148.2–151.9 s; slow blocks 66–69.2 s and 107.9–114.3 s.
+Legs (detected by the proven 1-s boxcar method on sid0 fixed-ISA altitude): run 1 — D1 9.9–33.8 s (−1.72 m/s), A2 51.6–76.2 s (+1.66), D3 95.0–119.0 s (−1.72), A4 136.8–161.3 s (+1.66); run 2 agrees to ±0.1 s. Handtest: under the corrected reference (§3.5) there are **no strong events** — the previously reported startup (0–3.8 s) and toss (148.2–151.9 s) were DEF-014 boundary artifacts, which the IMU refutes (|a|−g ≤ 0.17 m/s² and baro ±0.5 m at 144–152 s). Genuine slow blocks: 66–69.2 s and 107.9–114.3 s.
 
 ## 3. Methodology
 
@@ -44,7 +44,7 @@ The firmware-era-specific reconstruction defects found in this study (Section 4)
 
 - **Static:** rest RMS/MAD/p99 of v, audio false-latch rate (policy +0.20 / +0.05 m/s).
 - **Elevator:** per-leg median bias and RMS on the leg plateaus (|v_ref| > 0.5 m/s sustained ≥ 2 s), rise proxy (first crossing of 0.5·v_leg after leg start), exit proxy (sustained |v| ≤ 0.05 after leg end), overshoot. **The exit proxy is floored at ≈ 6.8 s for the whole KF family** by dwell wobble after floor stops — it is a dwell-stability proxy, not a lift-off measurement **[D]**.
-- **Handtest:** onset/release per event vs the event-window reference, slow-block bias (thermalling regime), toss recovery, static-silence false rate.
+- **Handtest:** slow-block bias (thermalling regime) and static-silence RMS / false-latch rate. Event-relative metrics (onset, release, toss recovery) were retired with DEF-014 — there are no events to score against.
 - **Virtual audio** is scored separately from estimator output: ON-fraction in/outside events, missed lifts (ascent with ON-fraction < 0.5), dwell false-ON seconds, using the timestamped policy state machine (`metrics6.run_audio`).
 - Elevator travel is a controlled-motion reference, not ground truth: no subsecond ground-truth response claims are made; rise/exit are labelled proxies **[D]**.
 
@@ -54,6 +54,10 @@ The firmware-era-specific reconstruction defects found in this study (Section 4)
 2. **Tuning is a separate, leakage-controlled pass** — selection on train only, all configurations reported on validation (`tune6.py`, Section 8). Nothing tuned is frozen.
 3. **Rate control** — decimation experiment (Section 6) before trusting cross-chain comparisons.
 4. **MCU equivalence** before trusting any replay-vs-firmware comparison (Section 4).
+
+### 3.5 DEF-014 — reference-smoother boundary artifact (post-commit correction)
+
+The ±3 s Gaussian reference smoother behind the handtest event metrics (`np.convolve(..., mode="same")`) was zero-padded: the smoothed altitude ramps from ~50 % of true value over the first/last ~3 s of a stream, manufacturing phantom reference velocity at both boundaries. On handtest3 this created two fictitious "events" (startup 0–3.8 s; toss 148.2–151.9 s with a fictitious ≈ 4 m/s peak) and two fictitious slow blocks. Physical checks refute them: at 144–152 s the IMU |a|−g peaks at 0.17 m/s² and baro altitude moves ±0.5 m — **there was no toss**; the whole-session altitude span (10–140 s) is 3.36 m of gentle hand motion. Fix: the smoother now normalizes by the effective window weight (`bench6/streams.py::reference_v`); the archived Phase 2–5 `src/metrics.py` remains frozen as the historical artifact and is not used by bench 6 scoring. Impact: handtest onset/toss metrics are void; **elevator, static, MCU-equivalence, rate-control and CPU results are unaffected** (they never used the defective smoother). The composite ranking is re-computed with slow-block |bias| replacing the phantom onset metric (§9).
 
 ## 4. MCU-vs-Python replay equivalence (the queued formal check)
 
@@ -104,17 +108,16 @@ Audio false-latch on statics: 0 latches/h for the whole bank except the known ch
 
 Sustained climb and sustained descent track equally well for the whole viable family (|bias| ≤ 0.006 m/s on ±1.7 m/s legs; A03_Holt is the outlier at +0.183). Per-leg bias detail in fig05; leg-by-leg rows in `611_elevator_legs.csv`. **No filter missed any lift in either run** — elevator discrimination is saturated; discrimination power comes from handtest (§5.3) and static silence.
 
-### 5.3 Handtest3 (moves, slow blocks, toss)
+### 5.3 Handtest3 (gentle moves, slow blocks — no strong events)
 
-- **Onset** (event metric, median): S2 0.08 s, S4 0.08 s, D01 0.07 s — fastest; S5 0.21 s, FUS 0.21 s, S1 0.23 s — slowest. C03/C01 onset is undefined (NaN) under the fixed event metric — no threshold crossing inside the event window; treated as "unscored", not "instant".
-- **Slow sustained blocks (66–69, 108–114 s):** all bank filters track the slow reference with median |bias| ≤ 0.05 m/s; FUS shows the largest deviation.
-- **Toss recovery (148.2–151.9 s, peak ≈ 4 m/s):** every bank filter re-settles below 0.3 m/s within the metric window (settle median 0.0 = already settled at first sample after event end); see fig14a for stacked-filter behaviour across the toss.
-- **Static-silence false latches** (8–66 s window): bank ≈ 310–350 latches/h except S2 18/h, S1 166/h, FUS 629/h. This rate is inflated by the short window and operator micro-movements before event cores; treat as relative ranking only.
+- **Event metrics: void.** Under the corrected reference there are no events (DEF-014); the onset/release/toss figures from the first analysis are withdrawn. The IMU independently confirms no strong motion at 144–152 s (|a|−g ≤ 0.17 m/s²).
+- **Slow sustained blocks (66–69 s, ref +0.25 m/s; 107.9–114.3 s, ref −0.17 m/s)** — the discriminative handtest metric. Median slow-block bias: B02 −0.014, C03 −0.030, E06 −0.032, D01 −0.037 m/s (tight tracking); C01 −0.064; S4 −0.116, S5 −0.121, FUS −0.182; **S2 +0.32 and S1 +0.63 m/s — both report positive climb through a slow *descent*** (S1: +0.44/+0.83 m/s against −0.17 m/s reference, with audio ON 0.60–0.72 of the block — a slow-descent false-lift; fig14a).
+- **Static-silence false latches** (8–66 s window): bank ≈ 310–350/h except S2 18/h, S1 166/h, FUS 629/h; B02 277/h. Inflated by the short window and operator micro-movements before block starts; treat as relative ranking only.
 
 ### 5.4 Virtual-audio behaviour (separate from estimator output)
 
 - Dwell false-ON between legs: 2.0–2.4 s/run across the viable family (FUS 4.95). This is the post-p0fix residual of the DEF-001/007 false-lift mechanism (Phase-era dwell false-lift was ~16.5 s/run on the defective reference).
-- Audio ON-fraction outside handtest events: bank ≈ 0.15–0.18 (S2 0.35 — its freeze-trap architecture keeps audio ON after motion).
+- Audio ON-fraction over the handtest session (event windows void under DEF-014, so this is a session-wide figure): bank ≈ 0.14–0.16; S2 0.33 (freeze-trap keeps audio ON after motion). Session aggregates hide block-local behaviour — S1 is 0.16 session-wide but 0.60–0.72 **inside** the slow-descent block — which is exactly why estimator output and virtual audio are judged separately.
 - Replay-vs-MCU ON/OFF agreement on elevator run 1 (frozen era): D01 84%, S4 43–75%, S5 33–62% within a ±30 ms window — dominated by transition timing near the asymmetric tone clamp, not by state disagreement (see fig01 strips).
 
 ## 6. Sampling-rate control (`rate6.py`)
@@ -143,11 +146,11 @@ Pre-p0fix B-lines carry the C03 refit-storm entry (~1329/2671 µs) as historical
 
 ## 8. Leakage-controlled tuning pass (`tune6.py`) — NOT a freeze
 
-Grids: D01/C03 q∈{0.3,1,3,10}×r∈{0.02,0.035,0.07}; S5 q∈{0.1,0.3,1,3}; S4 tau_fast∈{0.2,0.35,0.5}. Composite (rest RMS + |leg bias| + false latches + onset) selected on **train only**; every configuration reported on validation:
+Grids: D01/C03 q∈{0.3,1,3,10}×r∈{0.02,0.035,0.07}; S5 q∈{0.1,0.3,1,3}; S4 tau_fast∈{0.2,0.35,0.5}. Composite (rest RMS + |leg bias| + false latches + handtest static terms; the phantom onset term auto-dropped after DEF-014) selected on **train only**; every configuration reported on validation:
 
 | family | train pick | validation effect (vs frozen) |
 |---|---|---|
-| D01 | q=0.3 | rest RMS 0.057→0.036, exit 6.8→4.8 s, rise 1.19→1.48 s (real noise/latency trade) |
+| D01 | q=0.3 | rest RMS 0.057→0.028, exit 6.8→3.8 s, rise 1.19→1.70 s (real noise/latency trade) |
 | S5 | q=0.1 | rest RMS 0.037→0.025, exit 5.7→3.7 s, rise 1.33→1.65 s |
 | S4 | tau_fast=0.5 | mixed: exit better 5.0→4.5 s, rise/rms worse — not recommended |
 | C03 | **frozen best** | all alternatives ≥ +18 % composite |
@@ -156,23 +159,26 @@ The train picks transfer to validation (no leakage signature). `67/68/69_*.csv`,
 
 ## 9. Rankings vs Phases 2–5
 
-Composite rank (7 metrics, percentile-normalized, `612_rank_composite.csv`): **C03, C01, S2, S1, S4** top-5; D01 10th, S5 11th, FUS 19th. Per-metric leaders: rest noise — B02_project_kalman/C02/C01; response — E06 (rise 1.18 s); exit — C02/C01 (but see dwell-wobble floor); robustness family — S1/S4/S5 cluster within noise of each other.
+Composite rank (7 metrics, percentile-normalized, `612_rank_composite.csv`): **C03, C01, B02_project_kalman, E06, S2** top-5; S4 7th, S1 8th, D01 9th, S5 12th, FUS 21st (FUS_Q10 20th). This is the **corrected** composite — slow-block |bias| replaces the phantom onset metric (DEF-014). The first-analysis top-5 (C03, C01, S2, S1, S4) was partly an artifact of scoring filters against fictitious events while ignoring their real slow-block tracking error; S1 and S4 drop out of the top-5 on corrected scoring. Per-metric leaders: rest noise — B02_project_kalman/C02/C01; response — E06 (rise 1.18 s); exit — C02/C01 (but see dwell-wobble floor); slow-block tracking — B02/E06/C03/D01 (|bias| ≤ 0.04 m/s).
+
+**Interpretation flag — S2 is 5th on the composite despite its known freeze-trap architecture defect (§10, documented since Phases 3/4).** The composite rewards its low static chatter, and its slow-block error (+0.32 m/s, descent block) is not weighted heavily enough to offset that; ranking position is not endorsement. Treat S2 as a defect reference, not a candidate.
 
 What changed since Phase 4/5, and why:
 
 1. **D01's rest floor improved 0.101 → 0.057 m/s** — the old number was measured on the defective moving/session-mean reference, not on D01 itself. On corrected streams D01 is mid-pack, not bottom.
-2. **S5 (Phase-4 favourite) is no longer the stand-out:** 0.045 → 0.037 rest RMS is real, but on corrected streams the S1/S4/S5 cluster is tighter (0.035–0.037) and S5's onset is now visible as slow (0.21 s vs 0.07–0.08 for D01/S2/S4). Phase 4's synthetic/event-replay "fastest exit" claim for S4 does not transfer to the dwell-wobble-floored elevator proxy — cross-phase exit numbers are not comparable by construction.
-3. **S1's missed-lift weakness is gone on these captures** (0 missed everywhere on the elevator) — but S1 now shows the slowest handtest onset (0.23 s) and middling static chatter; its defect shifted, not vanished.
+2. **S5 (Phase-4 favourite) is no longer the stand-out:** 0.045 → 0.037 rest RMS is real, but the S1/S4/S5 cluster is tighter (0.035–0.037) and S5's slow-block bias (−0.12 m/s) is mid-pack. Phase 4's synthetic/event-replay "fastest exit" claim for S4 does not transfer to the dwell-wobble-floored elevator proxy — cross-phase exit numbers are not comparable by construction.
+3. **S1's defect is now quantified, not shifted:** +0.63 m/s slow-descent bias with audio ON 0.60–0.72 inside the block — a slow-descent false-lift in exactly the regime a vario must get right (thermalling). The first analysis saw only its slow phantom onset (0.23 s); corrected scoring exposes the real failure.
 4. **C03 rises to the composite top** — its Phase-2/3 weaknesses (CPU refit storm, fixed in DEF-002; false-lift sensitivity, fixed in DEF-001) were firmware-era artefacts. On corrected streams it is the best joint (noise, response, robustness, 2.6 % tick) point. This is exactly the "fresh study, not confirmation" outcome the task asked for.
-5. **FUS shows no measurable benefit on these captures** (elev rms 0.24 vs 0.09 baro-only, dwell false 4.95 s): quiet-building data has no vibration for IMU-aiding to cancel. The fusion value proposition remains open until real-flight/vibration data (BMP581/LSM6DSV16X phase).
+5. **FUS shows no measurable benefit on these captures** (elev rms 0.24 vs 0.09 baro-only, dwell false 4.95 s, slow-block bias −0.18 m/s): quiet-building data has no vibration for IMU-aiding to cancel. The fusion value proposition remains open until real-flight/vibration data (BMP581/LSM6DSV16X phase).
 6. **B02_Butter2's collapse is a rate artefact** (§6), not a filter verdict.
 
 ## 10. Failure modes (fig14)
 
-- **S2 freeze-trap** persists across the toss (architecture defect reference, kept as such).
+- **S1 slow-descent false-lift (surfaced by the DEF-014 correction):** slow block 107.9–114.3 s (ref −0.17 m/s) → S1 outputs +0.44/+0.83 m/s, audio ON 0.60–0.72 of the block. The first analysis saw only a slow phantom onset; corrected scoring exposes this as the dominant S1 defect. S2 shares the symptom more mildly (+0.32 m/s block bias).
+- **S2 freeze-trap** — documented architecture defect since Phases 3/4; retained as the defect reference. It appears 5th on the corrected composite regardless (§9 interpretation flag) — do not read that as rehabilitation.
 - **S3 gate chatter** on static silence.
 - **Startup flap** (DEF-010) at every capture start — audio valve should suppress; first seconds excluded from scoring.
-- **DEF-011 scale** — post-p0fix firmware velocities ×1.5498, absolute altitude garbage; affects MCU-side absolute reporting only.
+- **DEF-011 scale** — post-p0fix firmware velocities ×1.5498, absolute altitude garbage; affects MCU-side absolute reporting only. **Gate: DEF-011 must be fixed before any further physical validation or absolute-altitude comparison** (§13).
 - **Asymmetric tone clamp** — MCU tones blind below −0.22 m/s.
 
 ## 11. Limitations
@@ -180,9 +186,10 @@ What changed since Phase 4/5, and why:
 - No subsecond ground truth on the elevator: rise/exit are labelled proxies **[D]**; exit is floored at ~6.8 s by dwell wobble.
 - Handtest "static" window contains operator micro-movements; false-latch rates are relative rankings.
 - Post-p0fix dynamic captures don't exist yet: S4/S5/FUS MCU audio equivalence could not be scored on transitions (vacuous, not failed).
-- Onset NaN (C03/C01) is an event-metric artefact, reported as unscored.
+- Handtest3 contains no strong events under the corrected reference (DEF-014): event-relative response latency is not measurable on the current capture set; a dedicated dynamic hand-capture (or the new-sensor phase) is needed to score abrupt-motion recovery.
 - Fusion evaluation is baro-reference-bound; IMU-aiding value is not measurable on these captures.
 - The two MS5611 clones differ (sid1 noisier); conclusions hold per-sid (all medians reported over both).
+- Composite rankings are metric-set-sensitive: swapping the phantom onset term for slow-block |bias| (DEF-014 correction) moved S1/S4 out of the top-5. The per-metric tables (§5, `60/61/62/611_*.csv`) are the primary evidence; the composite is a summary, not a verdict.
 
 ## 12. Reproducibility
 
@@ -198,4 +205,8 @@ python -u figures6.py    # figures           -> figs/fig01..fig18.png
 
 ## 13. Next phase (BMP581 + LSM6DSV16X)
 
-Add the new captures to `datasets.py` (registry is the only sensor-specific file), re-run the pipeline, compare against this baseline. The archived reference firmware for the current sensor set is preserved at `esp-idf/firmware_archive/vario_idf_MS5611x2_MPU6050_p0fix_r8e79e68_20261023/` (binaries + SHA-256 + README) for A/B flashing. DEF-011 must be fixed in the sensor-integration build before any absolute-altitude comparison.
+Add the new captures to `datasets.py` (registry is the only sensor-specific file), re-run the pipeline, compare against this baseline. The archived reference firmware for the current sensor set is preserved at `esp-idf/firmware_archive/vario_idf_MS5611x2_MPU6050_p0fix_r8e79e68_20261023/` (binaries + SHA-256 + README) for A/B flashing; it is frozen and must not be modified.
+
+**Hard gate — DEF-011 before further physical validation:** the 10× pressure-scale defect (velocities ×1.5498, absolute altitude garbage) must be corrected in the sensor-integration build before any further physical validation campaign, any absolute-altitude comparison, or any cross-sensor benchmark. The `isa_fw10` replay chain exists precisely to keep current-era equivalence measurable until then.
+
+**Deferred:** the top-5 MCU efficiency benchmark (running C01/B02/E06/S2 on-target) is deferred until the BMP581/LSM6DSV16X arrive; existing MCU timing (§7, worst case 2.6 % of tick) shows processing performance is not the present bottleneck.

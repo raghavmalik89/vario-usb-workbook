@@ -88,6 +88,25 @@ root cause — this entry's report).
   run6/equiv6/rate6/tune6/mcucpu6/figures6), results CSVs, figs/fig01-18,
   defect register updates, docs/pdf/build_phase6_report.py.
 
+## 2026-10-24 (later) — DEF-014 correction: phantom handtest events, ranking re-computed
+- Post-commit report verification found the handtest reference smoother was
+  zero-padded at stream boundaries, fabricating phantom reference velocity
+  (fictitious startup event 0–3.8 s and "toss" 148.2–151.9 s with fake ~4 m/s peak;
+  IMU refutes: |a|-g <= 0.17 m/s^2 there — no toss happened). Handtest
+  onset/toss metrics withdrawn; elevator/static/equivalence/CPU results unaffected.
+- Fixed `bench6/streams.py::reference_v` (weight-normalized smoothing); pipeline
+  re-run (run6/tune6/figures6). Composite re-computed with slow-block |bias|
+  replacing the phantom onset term: **top-5 becomes C03, C01, B02_project_kalman,
+  E06, S2** (was C03, C01, S2, S1, S4). S1's real defect quantified: +0.63 m/s
+  slow-descent false-lift (audio ON 0.60–0.72 of the block). S2 keeps its known
+  freeze-trap defect — its 5th place is flagged as non-endorsement in the report.
+- **Gates set:** DEF-011 pressure-scale fix is a REQUIREMENT before any further
+  physical validation / absolute-altitude comparison. Top-5 MCU efficiency
+  benchmark DEFERRED until BMP581/LSM6DSV16X arrive (CPU data shows processing
+  is not the bottleneck). Firmware archive and datasets preserved unchanged.
+- Deliverables: corrected report MD + rebuilt PDF, DEF-014 in defect register,
+  updated results CSVs + fig06/08/14/17/18, new commit on top of 4dab0c0.
+
 ## Open threads (next sessions)
 - Post-p0fix dynamic capture (elevator/handtest) to close the S4/S5/FUS MCU-audio
   equivalence gap on transitions (currently vacuous on statics).

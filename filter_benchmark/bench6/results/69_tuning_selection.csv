@@ -1,32 +1,32 @@
 family,config,train_composite,frozen
-C03_CV_tracker,q=3.0 r=0.07,1.1765,False
-C03_CV_tracker,q=1.0 r=0.02,1.2066,False
-C03_CV_tracker,q=3.0 r=0.035,1.2571,False
-C03_CV_tracker,q=10.0 r=0.07,1.4915,False
-C03_CV_tracker,q=3.0 r=0.02,1.5021,False
-C03_CV_tracker,q=10.0 r=0.035,2.5244,False
-C03_CV_tracker,q=10.0 r=0.02,3.0177,False
-C03_CV_tracker,q=0.3 r=0.02,,False
-C03_CV_tracker,q=0.3 r=0.035,,False
-C03_CV_tracker,q=0.3 r=0.07,,False
-C03_CV_tracker,q=1.0 r=0.035,,True
-C03_CV_tracker,q=1.0 r=0.07,,False
-D01_Kalman_CV,q=0.3 r=0.035,0.8755,False
-D01_Kalman_CV,q=0.3 r=0.02,0.9037,False
-D01_Kalman_CV,q=0.3 r=0.07,0.9196,False
-D01_Kalman_CV,q=1.0 r=0.07,0.9681,False
+C03_CV_tracker,q=0.3 r=0.07,0.8773,False
+C03_CV_tracker,q=0.3 r=0.035,0.9006,False
+C03_CV_tracker,q=1.0 r=0.07,0.9265,False
+C03_CV_tracker,q=0.3 r=0.02,0.9312,False
+C03_CV_tracker,q=1.0 r=0.035,1.0,True
+C03_CV_tracker,q=3.0 r=0.07,1.0664,False
+C03_CV_tracker,q=1.0 r=0.02,1.1206,False
+C03_CV_tracker,q=3.0 r=0.035,1.3085,False
+C03_CV_tracker,q=10.0 r=0.07,1.6807,False
+C03_CV_tracker,q=3.0 r=0.02,1.6935,False
+C03_CV_tracker,q=10.0 r=0.035,2.5565,False
+C03_CV_tracker,q=10.0 r=0.02,3.2394,False
+D01_Kalman_CV,q=0.3 r=0.07,0.8463,False
+D01_Kalman_CV,q=0.3 r=0.035,0.8506,False
+D01_Kalman_CV,q=1.0 r=0.07,0.9045,False
+D01_Kalman_CV,q=0.3 r=0.02,0.913,False
 D01_Kalman_CV,q=1.0 r=0.035,1.0,True
-D01_Kalman_CV,q=1.0 r=0.02,1.1288,False
-D01_Kalman_CV,q=3.0 r=0.07,1.132,False
-D01_Kalman_CV,q=3.0 r=0.035,1.3834,False
-D01_Kalman_CV,q=3.0 r=0.02,1.8268,False
-D01_Kalman_CV,q=10.0 r=0.07,1.8358,False
-D01_Kalman_CV,q=10.0 r=0.035,2.5442,False
-D01_Kalman_CV,q=10.0 r=0.02,4.078,False
-S4_FastSlowGated,tau_fast=0.5,0.9237,False
+D01_Kalman_CV,q=3.0 r=0.07,1.1012,False
+D01_Kalman_CV,q=1.0 r=0.02,1.1831,False
+D01_Kalman_CV,q=3.0 r=0.035,1.4601,False
+D01_Kalman_CV,q=10.0 r=0.07,1.9458,False
+D01_Kalman_CV,q=3.0 r=0.02,2.0207,False
+D01_Kalman_CV,q=10.0 r=0.035,2.8531,False
+D01_Kalman_CV,q=10.0 r=0.02,3.4505,False
+S4_FastSlowGated,tau_fast=0.5,0.9084,False
 S4_FastSlowGated,tau_fast=0.35,1.0,True
-S4_FastSlowGated,tau_fast=0.2,1.4284,False
-S5_LightGateKF,q=0.1,0.9499,False
+S4_FastSlowGated,tau_fast=0.2,1.4891,False
+S5_LightGateKF,q=0.1,0.9399,False
 S5_LightGateKF,q=0.3,1.0,True
-S5_LightGateKF,q=1.0,1.3099,False
-S5_LightGateKF,q=3.0,1.7959,False
+S5_LightGateKF,q=1.0,1.3719,False
+S5_LightGateKF,q=3.0,1.9551,False
