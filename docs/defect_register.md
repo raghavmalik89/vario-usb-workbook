@@ -183,3 +183,43 @@ Verification levels:
   campaign, any absolute-altitude comparison, or any cross-sensor benchmark**.
   Existing bench captures remain valid for velocity/audio analysis via the `isa_fw10`
   replay chain until the fix lands.
+
+## DEF-015 — Elevator capture host-elapsed (172.74 s) vs device-timestamp span (191.69 s) discrepancy
+- **Status:** ROOT-CAUSED (host-side suspension during capture; device clock exonerated)
+- **Found:** 2026-10-24 (BMP581 elevator capture `20261024_235054_idf_bmp581_elevator_2x`)
+- **Component:** capture environment (Windows host USB/power management), not firmware.
+- **Evidence:**
+  - Same-build captures: static f=0.996, handtest f=1.005 (f = device span /
+    host elapsed) — the device clock is intact; only the elevator capture shows f=1.110.
+  - The file is internally perfect: 0 seq gaps, every seq exactly +1, max inter-frame
+    device dt 10 ms, no backward jumps, no burst-flush signature in device time.
+  - USB TX ring high-water ≈ **101 KB** in the elevator capture vs 0.6–1.1 KB in the
+    static/hand tests (ring capacity 240 KB). ~101 KB ≈ 15–45 s of buffered stream.
+  - Host-side `time.monotonic()` elapsed (172.74 s) is ≈ 19 s shorter than the device
+    span, matching the buffered backlog: the host (or its USB stack) suspended for
+    ~19 s while the user was away from the laptop in the elevator; the firmware kept
+    streaming into the ring and the backlog drained on resume.
+- **Impact:** device timestamps remain the only reliable clock for this capture;
+  wall-clock durations of capture segments are not trustworthy. Cross-capture
+  comparisons must use device-time velocities (which are intact). The late-night
+  elevator was also genuinely ~11% faster than the Bench 6 runs (±1.66–1.74 vs
+  ±1.55–1.60 m/s device-time) — this is a condition difference, not a clock error.
+- **Mitigation for future captures:** disable USB selective suspend / keep the laptop
+  awake during elevator runs; check sidecar `stats.elapsed_s` against the device span
+  immediately after capture (flag |f−1| > 2%).
+
+## DEF-016 — BMP581 STATUS.drdy is not cleared by data-register reads
+- **Status:** FIXED (cadence read); fault dataset retained
+- **Found:** 2026-10-24 (BMP581 bring-up `20261024_225226_idf_bmp581_bringup`)
+- **Component:** `esp-idf/vario/main/main.c::bmp581_service` (original drdy-poll design)
+- **Detail:** polling STATUS (0x28) bit0 on every 5 ms tick re-asserted continuously:
+  200 reads/s emitted against only ~40 unique register values/s (bit-identical 6-byte
+  repeats). Register writes were verified correct via readback (osr_cfg=0x61,
+  odr_cfg=0xc5), so the part was converting at the programmed 40 Hz while the flag
+  behaved level-style. The Bosch reference driver never polls STATUS; it burst-reads
+  data directly.
+- **Fix:** fixed 25 ms cadence read (every 5th 5 ms tick) matching the programmed
+  ODR; verified 40.0 Hz, dt exactly 25 ms, 98% fresh values (bringup2 capture).
+- **Fault dataset:** `20261024_225226_idf_bmp581_bringup` retained.
+- **Note:** every BMP581 P frame carries its own fresh temperature (on-chip
+  compensation) — the DEF-010 d2-seed boot step does not exist for this part.

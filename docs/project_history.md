@@ -115,3 +115,37 @@ root cause — this entry's report).
 - Real-flight capture; elevator remains a proxy.
 - Audio policy tuning (min-on-time, exit-from-lift) against benchmark; estimator
   selection still explicitly frozen.
+
+## 2026-10-25 — Bench 7: BMP581 filter benchmark (committed on top of 4103c86)
+
+- **BMP581 bring-up (10-24):** new driver `esp-idf/vario/main/bmp581.{h,c}` (Bus B
+  @0x47, chipid 0x50; OSR ×16/×2, ODR 40 Hz, IIR bypass; on-chip compensation
+  `Pa = raw24/64`). DEF-011 fixed in `baro_proc.c` (exact common.py scale).
+  DEF-016 found and fixed: BMP581 drdy is NOT cleared by data-register reads —
+  cadence read substituted (fault dataset retained). Firmware archived
+  (`esp-idf/firmware_archive/vario_idf_BMP581_MPU6050_pre-bench7_*`); Bosch API
+  refs in `analysis/refs/bmp5/`. capture.py keeps all #C meta lines
+  (`device.config_lines`). Committed as 4103c86.
+- **DEF-015 (root-caused):** BMP581 elevator capture host elapsed 172.74 s vs
+  device span 191.69 s — host-side suspension (~19 s) during the run; ring
+  high-water 101 KB buffered the backlog; device clock exonerated (static/
+  handtest f≈1.00). Elevator genuinely ran ~11% faster than Bench 6 runs.
+- **Bench 7 run (`bench6/run7.py`):** 37 frozen candidates × 3 BMP581 captures
+  (static 90 s, handtest 151 s, elevator 192 s). Results `results/7*.csv`,
+  traces `results/traces7/`, figures `figs7/7*.png`, report
+  `filter_benchmark/reports/bench7_bmp581_report.md`.
+- **Key results:** all 37 candidates: 0 false audio ON in the 90 s static
+  (MS5611 D01 flapped at 76/h — clone noise was the driver). Baro-only
+  candidates: 0 missed lifts, 0 false-audio seconds on the elevator; FUS shows
+  +0.20/−0.25 m/s sustained bias, 3.6× leg RMS, 7.4 s median exit, 2 start-up
+  false ONs, ~5–6 s ON-extensions — measurable disadvantages, bounded verdict
+  (turbulence/flight untested; LSM6DSV16X pending). D01 ≡ C03 proven
+  mathematical (mean |Δv| ≤ 0.5 mm/s; episodes identical) — one architecture,
+  carry C03's 55 µs not D01's 131 µs. S2 freeze reproduces on BMP581
+  (slow-block audio ON 93%) — sensor-independent architectural defect.
+  Estimator-output noise dropped ~6× vs MS5611 (e.g. S4 0.038 → 0.0065 m/s):
+  clone-limited → estimator-limited regime; Q/R re-tuning flagged for later.
+- **MCU↔Python equivalence:** all 5 firmware estimators' V-frames reproduced
+  within 0–100 ms across captures.
+- **No estimator selected or frozen.** MCU top-5 efficiency benchmark still
+  deferred; LSM6DSV16X integration and real-flight capture remain future stages.

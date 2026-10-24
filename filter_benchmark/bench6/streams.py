@@ -75,6 +75,21 @@ def _diag(df, sid):
                 median_dt_s=float(np.median(dt)) if len(dt) else np.nan)
 
 
+def _sensor_type(meta: dict, sid: int) -> str:
+    """Sensor kind for (stem, sid) from the capture sidecar #C meta.
+
+    New-format captures carry every #C line in device.config_lines; the
+    per-device line 'dev=s<sid>,type=<kind>,...' is the single source of
+    truth (BMP581 needs no PROM).  Old captures have no config_lines and
+    are MS5611 by construction.  Defaults to ms5611.
+    """
+    for line in meta.get("device", {}).get("config_lines", []):
+        kvs = dict(kv.split("=", 1) for kv in line.split(",") if "=" in kv)
+        if kvs.get("dev") == f"s{sid}" and "type" in kvs:
+            return kvs["type"]
+    return "ms5611"
+
+
 def baro_stream(stem: str, sid: int, reference: str = "isa",
                 seed_d2: bool = False):
     """Compensated altitude stream for one barometer.
@@ -96,11 +111,43 @@ def baro_stream(stem: str, sid: int, reference: str = "isa",
     """
     df = load_frames(stem)
     meta = json.loads(ds.sidecar_for(stem).read_text())
-    prom = get_prom(meta, sid)
+    sensor = _sensor_type(meta, sid)
     pr = df[(df.type == "P") & (df.sid == sid)][["t_s", "d1"]].dropna()
     tr = df[(df.type == "T") & (df.sid == sid)][["t_s", "d2"]].dropna()
     diag = _diag(df, sid)
     d1 = pr.d1.values.astype(float)
+    if sensor == "bmp581":
+        # BMP5 generation: on-chip trim compensation.  d1 is the pre-
+        # compensated 24-bit pressure fixed point: Pa = raw/64.  Every P frame
+        # carries its own fresh temperature (raw/65536 = degC) — no d2
+        # merge, no boot seed (DEF-010 does not exist for this part).
+        p = d1 / 64.0
+        bad = (p < 50000.0) | (p > 120000.0)
+        diag["n_feed"] = int((~bad).sum())
+        pr, p = pr[~bad], p[~bad]
+        temp = None
+        if reference == "isa":
+            alt = ISA_ALT(p)
+        elif reference in ("session_mean", "moving_p0"):
+            # kept for API parity; not used by the BMP581 study
+            if reference == "session_mean":
+                p0 = np.nanmean(p[: min(len(p), 2000)])
+                alt = altitude_m(p, p0)
+            else:
+                p0r = np.cumsum(p) / np.arange(1, len(p) + 1)
+                p0f = np.where(np.arange(len(p)) < 2000, p0r, p0r[1999])
+                alt = altitude_m(p, p0f)
+        else:
+            raise ValueError(f"reference {reference!r} not defined for bmp581")
+        order = np.argsort(pr.t_s.values, kind="stable")
+        t = pr.t_s.values[order]
+        alt = alt[order]
+        diag["t_first"] = float(t[0])
+        diag["t_last"] = float(t[-1])
+        diag["sensor"] = "bmp581"
+        return t, alt, diag
+
+    prom = get_prom(meta, sid)
     bad = (d1 < D1_BAND[0]) | (d1 > D1_BAND[1])
     diag["n_feed"] = int((~bad).sum())
     pr, d1 = pr[~bad], d1[~bad]

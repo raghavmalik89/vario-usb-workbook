@@ -44,7 +44,42 @@ FILES = {
         quality="CLEAN: 0 seq gaps, 20.2 s (diagnostic capture, doubles as a "
                 "short independent static)",
         firmware="post-p0fix — the fixed-reference MCU equivalence set"),
+    # ---- Bench 7: BMP581 captures (2026-10-24, firmware r4103c86) ----------
+    # Single barometer: BMP581 is sid0, NO sid1 — runners must skip missing
+    # sids.  Host-elapsed vs device-timestamp anomaly on the elevator capture
+    # is DEF-015 (host-side USB/laptop suspension; ring high-water 101 KB;
+    # device clock verified intact via static/handtest f~1.00).
+    "20261024_231354_idf_bmp581_static": dict(
+        label="BMP581 static", classes=("static",), split="validation",
+        quality="CLEAN: 0 seq gaps, 0 bad lines, 40.0 Hz P / 100 Hz I, "
+                "f(device/host)=0.996 (90.4 s)",
+        firmware="r4103c86 BMP581 build (DEF-011 fixed, DEF-016 cadence read)"),
+    "20261024_233753_idf_bmp581_handtest1": dict(
+        label="BMP581 handtest1", classes=("handtest",), split="train",
+        quality="GOOD: 0 seq gaps, 0 bad lines, f=1.005 (150.4 s). 60 s "
+                "stationary + repeated controlled vertical moves + final rest",
+        firmware="r4103c86 BMP581 build"),
+    "20261024_235054_idf_bmp581_elevator_2x": dict(
+        label="BMP581 elevator", classes=("elevator",), split="validation",
+        quality="GOOD: 0 seq gaps, 1 bad line, f=1.110 (DEF-015 host "
+                "suspension; device timeline internally perfect). Route "
+                "14->1->14->1->14, late-night unused elevator, rig centred "
+                "away from airflow, settling period before stop",
+        firmware="r4103c86 BMP581 build"),
     # ---- excluded from scoring; retained as documented fault-test data ----
+    "20261024_225226_idf_bmp581_bringup": dict(
+        label="BMP581 bringup (drdy defect)", classes=("static",),
+        split="excluded",
+        quality="FAULT DATASET: drdy-poll build emitted 200 reads/s with "
+                "~40 unique values/s (DEF-016, bit-identical repeats)",
+        firmware="pre-cadence-fix build",
+        fault_role="DEF-016 drdy fault-test dataset"),
+    "20261024_230014_idf_bmp581_bringup2": dict(
+        label="BMP581 bringup2 (verified)", classes=("static",),
+        split="excluded",
+        quality="CLEAN 20 s bring-up verification (not a scoring static)",
+        firmware="r4103c86 BMP581 build",
+        fault_role="diagnostic only"),
     "20261023_221109_idf_elevator_2x": dict(
         label="elevator aborted", classes=("elevator",), split="excluded",
         quality="ABORTED: USB-stall dropouts (DEF-008), 18 s only",

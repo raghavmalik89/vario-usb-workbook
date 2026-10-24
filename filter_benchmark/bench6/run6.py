@@ -87,7 +87,16 @@ def main():
         info = ds.FILES[stem]
         classes = info["classes"]
         for sid in (0, 1):
-            t, alt, diag = streams.baro_stream(stem, sid, reference="isa")
+            try:
+                t, alt, diag = streams.baro_stream(stem, sid, reference="isa")
+            except Exception as e:
+                # registry now contains single-barometer captures (BMP581:
+                # sid0 only) — absent sids are skipped, not fatal
+                print(f"[stream] {stem} sid{sid}: absent ({e}), skipped")
+                continue
+            if diag["n_feed"] == 0:
+                print(f"[stream] {stem} sid{sid}: empty, skipped")
+                continue
             qual_rows.append(dict(session=stem, sid=sid, **diag))
             print(f"[stream] {stem} sid{sid}: {diag['n_feed']} samples "
                   f"{diag['n_seq_gaps']} gaps {diag['n_corrupt']} corrupt",
