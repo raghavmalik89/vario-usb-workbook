@@ -331,12 +331,13 @@ static void emit_boot_meta(void)
              "#C,rig=bmp581@B%s%s,i_hz=240(stream 100),imu=on,est=on,"
              "a_lsb_per_g=%d,g_lsb_per_dps=65.5,a_fs=8g,flt=driver-default,"
              "tick_ms=%d,est_map=e0..e4=D01,C03,S4,S5,FUS@sid0%s,"
-             "tone=%d+%dv,au=0.20/0.05",
+             "tone=%d+%dv,au=0.20/0.05,imu_rec=%lu",
              s_baro_type[1] == BARO_MS5611 ? "+ms5611" : "",
              s_imu.ok ? "" : "+imu_missing",
              IMU_A_LSB_PER_G, TICK_MS,
              s_baro_type[1] != BARO_NONE ? ";e5..e9=sid1" : "",
-             AU_TONE_BASE_HZ, AU_TONE_SLOPE_HZ);
+             AU_TONE_BASE_HZ, AU_TONE_SLOPE_HZ,
+             (unsigned long)s_imu.recoveries);
     tx_meta(line);
 }
 

@@ -266,3 +266,43 @@ Verification levels:
   against the ST header. Readback path is unreliable — likely the same NACK
   phenomenon (DEF-017) returning stale/shifted bytes during a deaf window.
 - **Impact:** none on data; do not use the ctrl meta fields as config evidence.
+
+## DEF-020 — ROOT CAUSE of DEF-017/018: bus A at 400 kHz with only weak internal pull-ups; runtime wedge at ~25 s
+- **Status:** FIXED (bus A lowered to 100 kHz + runtime recovery FSM); verified 60 s + 90 s at zero IMU errors
+- **Found:** 2026-10-25 (`20261025_131550_idf_bmp581LSM6DS_static0`, 90 s static)
+- **Component:** IMU I2C electrical layer — LSM6DSV16X breakout has no onboard
+  pull-ups; firmware relied on `enable_internal_pullup` (~45 kOhm) on GPIO4/5.
+- **Root cause:** at 400 kHz the bus RC rise time (weak pull-up + jumper
+  capacitance) is far outside I2C fast-mode timing. The ACK bit is sampled
+  during a still-rising edge -> master reads NACK on healthy transactions
+  ("quick NACKs", DEF-017); repeated error-path transactions desync the ESP32
+  I2C FSM / the slave front-end until the link goes permanently deaf
+  (DEF-018 wedge — now observed at runtime, not only at boot). Progressive
+  failure culminating at ~25 s in the user's captures matches thermal drift of
+  the marginal timing; run-to-run variance (some runs healthy for 30+ s at
+  identical firmware) matches noise/crosstalk dependence.
+- **Collateral damage, verified in counters:** each failing poll burned
+  3 attempts + 2x2 ms delays, stretching the shared 5 ms sens tick to ~6.4 ms;
+  the BMP581 cadence (every 5th tick) slipped 25 -> 32 ms exactly (5 x 6.4).
+  Not a bus conflict — pure task-time contention. After deafness: i2c_mpu and
+  i2slow counters saturated at 1000/5 s window.
+- **Fix:** (1) `I2C_FREQ_HZ_A = 100000` for bus A only (BMP581 bus B stays at
+  400 kHz with its own breakout pull-ups). 100 kHz tolerates the weak pull-up
+  RC with large margin; IMU burst costs ~1.4 ms, 2.4% of the tick budget.
+  (2) Runtime recovery FSM in `lsm_imu_read`: 200 ms of solid failure ->
+  DEGRADED (one cheap probe per 100 ms, E code 1 throttled to 10/s), bus reset
+  + full reconfigure every 2 s (E code 3), instant exit on first good probe.
+  Prevents the tick-stretch collateral even for future wedges.
+- **Verified:** `20261025_163348_idf_lsm6dsv_fixcheck60s` — 0 E frames,
+  100.0 Hz I stream in every 5 s window, 0.0% stale, baro 39.95 Hz steady;
+  `20261025_163515_idf_lsm6dsv_fixcheck90s` — 0 E frames, 100.0 Hz throughout,
+  0.0% stale, baro 40 Hz, imu_rec=0 (FSM never needed). Compare: static0 had
+  15318 E1 + 193 E2, IMU dead after 25.15 s, baro at 31.25 Hz.
+- **Hardware recommendation:** add external ~2.2 kOhm pull-ups on GPIO4/SDA and
+  GPIO5/SCL (breakout or inline) if 400 kHz is ever needed back; at 100 kHz
+  none are required. DEF-017/018 symptoms should be considered fully explained
+  by this defect; the recovery FSM is retained as insurance.
+- **Note:** device-vs-host span discrepancy in static0 (119.3 vs 90.2 s) is the
+  known host-side USB backlog class (DEF-015/elevator finding, ring_hw 136 KB):
+  host paused ~29 s and drained the backlog. Acquisition itself is intact when
+  device-time cadence is used.

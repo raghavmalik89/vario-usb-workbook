@@ -84,10 +84,11 @@ esp_err_t lsm_imu_init(lsm_imu_t *im, i2c_master_bus_handle_t bus, uint8_t addr)
 {
     memset(im, 0, sizeof(*im));
     im->addr = addr;
+    im->bus = bus;
     i2c_device_config_t dev = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = addr,
-        .scl_speed_hz = I2C_FREQ_HZ,
+        .scl_speed_hz = I2C_FREQ_HZ_A,
     };
     esp_err_t err = i2c_master_bus_add_device(bus, &dev, &im->dev);
     if (err != ESP_OK) return err;
@@ -122,26 +123,84 @@ esp_err_t lsm_imu_init(lsm_imu_t *im, i2c_master_bus_handle_t bus, uint8_t addr)
     return ESP_OK;
 }
 
+/* Runtime link recovery (DEF-020): when the IMU goes deaf mid-session —
+ * observed as progressive NACK increase culminating in permanent deafness
+ * (~25 s into a static capture) — a naive poll-and-retry every 5 ms tick
+ * burns 3 attempts + 2 ms delays per tick, stretching the shared tick from
+ * 5.0 to ~6.4 ms and dragging the BMP581 cadence from 25 ms to 32 ms
+ * (every-5th-tick scheduling).  Instead: after 200 ms of solid failure,
+ * enter DEGRADED mode (one cheap probe every 100 ms, one E frame per
+ * failed probe) and every 2 s try bus-reset + full reconfigure.  Any
+ * successful probe exits DEGRADED immediately. */
+#define LSM_OK_CONSEC_FAIL   40    /* ticks (5 ms) of solid failure -> degrade */
+#define LSM_DEGRADED_PERIOD  20    /* probe every 20th tick = 100 ms */
+#define LSM_RECOVER_EVERY    20    /* re-init every 20 probes = 2 s */
+
+static void lsm_imu_recover(lsm_imu_t *im)
+{
+    im->recoveries++;
+    i2c_master_bus_reset(im->bus);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    (void)lsm_imu_configure(im);   /* best effort; probe decides if it worked */
+}
+
 esp_err_t lsm_imu_read(lsm_imu_t *im, int16_t out[8], bool *fresh)
 {
-    lsm6dsv16x_data_ready_t drdy = {0};
-    if (ST_RETRY(lsm6dsv16x_flag_data_ready_get(&im->ctx, &drdy)) != 0) {
-        im->last_err = 1;
-        return ESP_FAIL;
-    }
-    *fresh = drdy.drdy_xl && drdy.drdy_gy;
-    if (!*fresh) return ESP_OK;   /* caller reuses the previous raw[] */
-
-    /* One atomic 14-byte burst instead of three separate ST calls:
-     * OUT_TEMP_L .. OUTZ_H_A are contiguous (0x20..0x2D) and IF_INC is on.
-     * Halves the transactions per fresh sample (two collision chances ->
-     * one) and removes the tear risk between the accel and gyro blocks. */
     uint8_t b[14];
-    if (ST_RETRY(im->ctx.read_reg(im->ctx.handle, LSM6DSV16X_OUT_TEMP_L,
-                                  b, sizeof(b))) != 0) {
-        im->last_err = 2;
-        return ESP_FAIL;
+    lsm6dsv16x_data_ready_t drdy = {0};
+
+    if (im->degraded) {
+        if (++im->degraded_cnt < LSM_DEGRADED_PERIOD) {
+            *fresh = false;
+            return ESP_OK;   /* cheap skip: no bus traffic, no tick stretch */
+        }
+        im->degraded_cnt = 0;
+        if (lsm6dsv16x_flag_data_ready_get(&im->ctx, &drdy) != 0) {
+            im->last_err = 1;
+            if (++im->recover_in >= LSM_RECOVER_EVERY) {
+                im->recover_in = 0;
+                lsm_imu_recover(im);
+                im->last_err = 3;   /* E3: recovery performed */
+            }
+            return ESP_FAIL;
+        }
+        /* probe succeeded: link is back */
+        im->consec_fail = 0;
+        im->recover_in = 0;
+        im->degraded = false;
+        *fresh = drdy.drdy_xl && drdy.drdy_gy;
+        if (!*fresh) return ESP_OK;
+        /* fall through to the burst with the drdy we already have */
+        if (ST_RETRY(im->ctx.read_reg(im->ctx.handle, LSM6DSV16X_OUT_TEMP_L,
+                                      b, sizeof(b))) != 0) {
+            im->last_err = 2;
+            return ESP_FAIL;
+        }
+    } else {
+        if (ST_RETRY(lsm6dsv16x_flag_data_ready_get(&im->ctx, &drdy)) != 0) {
+            im->last_err = 1;
+            if (++im->consec_fail >= LSM_OK_CONSEC_FAIL) {
+                im->degraded = true;
+                im->degraded_cnt = 0;
+            }
+            return ESP_FAIL;
+        }
+        im->consec_fail = 0;
+        *fresh = drdy.drdy_xl && drdy.drdy_gy;
+        if (!*fresh) return ESP_OK;   /* caller reuses the previous raw[] */
+
+        /* One atomic 14-byte burst instead of three separate ST calls:
+         * OUT_TEMP_L .. OUTZ_H_A are contiguous (0x20..0x2D) and IF_INC is
+         * on.  Halves the transactions per fresh sample (two collision
+         * chances -> one) and removes the tear risk between the accel and
+         * gyro blocks. */
+        if (ST_RETRY(im->ctx.read_reg(im->ctx.handle, LSM6DSV16X_OUT_TEMP_L,
+                                      b, sizeof(b))) != 0) {
+            im->last_err = 2;
+            return ESP_FAIL;
+        }
     }
+
     out[3] = (int16_t)((uint16_t)b[0] | ((uint16_t)b[1] << 8));
     for (int i = 0; i < 3; i++)
         out[4 + i] = (int16_t)((uint16_t)b[2 + 2 * i]

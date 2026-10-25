@@ -28,6 +28,13 @@
  * 2026-10-23 rework showed how easily wiring changes these: bench #1 clone
  * pulled CSB low (0x76) until the rework, after which it answered 0x77. */
 #define I2C_FREQ_HZ    400000
+/* Bus A (IMU) runs at 100 kHz: the LSM6DSV16X breakout has no external
+ * pull-ups, so it relies on the ESP32-S3's weak (~45 kOhm) internal ones.
+ * At 400 kHz the rise time is far out of spec -> the ACK bit is sampled
+ * low -> "quick NACK" failures, bus FSM desync and eventual permanent
+ * deafness (DEF-017/018/020).  At 100 kHz the same RC is comfortably
+ * inside timing.  Bus B (BMP581, own pull-ups) stays at 400 kHz. */
+#define I2C_FREQ_HZ_A  100000
 #define I2C_TIMEOUT_MS 20
 
 /* ---- Sampling schedule ---------------------------------------------------- */

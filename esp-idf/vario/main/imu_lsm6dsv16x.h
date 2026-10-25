@@ -25,13 +25,26 @@
 
 typedef struct {
     i2c_master_dev_handle_t dev;
+    i2c_master_bus_handle_t bus;   /* kept for runtime bus-reset recovery */
     stmdev_ctx_t ctx;
     uint8_t addr;
     uint8_t whoami;
     uint8_t ctrl1, ctrl2, ctrl3, ctrl6, ctrl7;  /* latched readback for #C meta */
-    uint8_t last_err;   /* 1 = status read failed, 2 = output burst failed */
+    uint8_t last_err;   /* 1 = status read failed, 2 = output burst failed,
+                           3 = link recovery performed (bus reset + reconfig) */
+    uint32_t recoveries;   /* runtime recovery attempts (DEF-020 diagnostic) */
+    uint16_t consec_fail;  /* consecutive failed polls in OK state */
+    uint16_t degraded_cnt; /* ticks since last degraded probe */
+    uint16_t recover_in;   /* degraded probes until next recovery attempt */
+    bool degraded;         /* link declared wedged, sparse probing */
     bool ok;
 } lsm_imu_t;
+
+/* E-frame codes emitted by main.c from last_err:
+ *   1 = STATUS/drdy read failed (3 attempts)
+ *   2 = output burst read failed (3 attempts)
+ *   3 = IMU link recovery performed: ~200 ms of solid failure triggered
+ *       degraded mode (sparse probing) and a bus reset + full reconfigure */
 
 esp_err_t lsm_imu_init(lsm_imu_t *im, i2c_master_bus_handle_t bus, uint8_t addr);
 esp_err_t lsm_imu_read(lsm_imu_t *im, int16_t out[8], bool *fresh);

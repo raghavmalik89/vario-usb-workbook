@@ -115,3 +115,24 @@ python analysis/lsm_bringup_check.py analysis/data/<capture>.csv
   dynamic captures (hand + elevator) with this IMU, then the cross-sensor
   estimator re-benchmark. Do not change estimator algorithms/parameters before
   the frozen-config comparison is done.
+
+---
+
+## Addendum 2026-10-25 (evening) — DEF-020: the ~25 s IMU failure, root-caused and fixed
+
+The 90 s static recording (`20261025_131550_idf_bmp581LSM6DS_static0`) showed
+IMU acquisition dying at 25.15 s (15318 E1 + 193 E2, BMP slipping to 31.25 Hz).
+Root cause: **bus A ran at 400 kHz with only the ESP32-S3's ~45 kOhm internal
+pull-ups** (the LSM6DSV16X breakout has none). Rise time out of spec -> ACK bit
+mis-sampled as NACK -> FSM/front-end desync -> permanent deafness. BMP slowdown
+was collateral: failing polls (3 attempts + delays every 5 ms tick) stretched
+the shared tick 5.0 -> 6.4 ms; baro cadence 5 x 6.4 = 32 ms exactly.
+
+Fix: bus A lowered to **100 kHz** (`I2C_FREQ_HZ_A`, bus B BMP581 unchanged at
+400 kHz) + a runtime recovery FSM in `lsm_imu_read` (200 ms solid failure ->
+sparse probing; bus reset + reconfigure every 2 s; E code 3; `imu_rec=` in rig
+meta). Verified: 60 s and 90 s captures with **zero IMU errors, 100.0 Hz I
+stream in every window, 0.0% stale, baro steady at 40 Hz**.
+
+Hardware note: external ~2.2 kOhm pull-ups on GPIO4/5 would allow 400 kHz
+again; not needed at 100 kHz. Full analysis: DEF-020 in `docs/defect_register.md`.
