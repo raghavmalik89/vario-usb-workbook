@@ -1,0 +1,6 @@
+estimator,episodes,startup_episodes_t0_10s,total_on_s,mean_dur_s,max_dur_s,brief_lt_1p5s,tone_peak_mps,tone_mean_peak_mps
+D01,14,0,21.06,1.50,2.25,6,1.55,1.36
+C03,14,0,21.08,1.51,2.25,6,1.55,1.37
+S4,14,0,20.17,1.44,2.25,8,1.45,1.06
+S5,14,0,20.00,1.43,2.10,8,1.44,1.12
+FUS,22,0,21.05,0.96,2.82,16,6.65,2.80
