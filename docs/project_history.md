@@ -149,3 +149,36 @@ root cause — this entry's report).
   within 0–100 ms across captures.
 - **No estimator selected or frozen.** MCU top-5 efficiency benchmark still
   deferred; LSM6DSV16X integration and real-flight capture remain future stages.
+
+## 2026-10-25 — Streaming protocol note: repeated #H/#C blocks during streaming (investigated, no defect)
+
+**Observation:** during continuous streaming the full boot header block
+(`#H,vario-idf`, `scan_A/scan_B`, `dev=s0...`, `dev=imu...`,
+`status=waiting_host_g`, `status=stream_go`) reappears mid-stream, framed
+between normal data frames (I/P/T/B), with sequence numbers and device
+timestamps continuous.
+
+**Cause (verified in code):** intentional periodic keepalive. `tx_meta()` both
+pushes each `#` line immediately at boot and appends it to a persistent buffer
+`s_meta`; `tx_meta_keepalive()` re-pushes the whole accumulated block every
+`BENCH_REPORT_TICKS` = 1000 ticks = 5 s (main.c sens_task). Design intent:
+a host joining mid-stream (or recovering from a USB backlog gap, cf. DEF-015)
+always receives full device identity/config, and `health_fail_loop` keeps
+reporting which device failed without new code paths.
+
+**Not host G commands:** capture.py never sends `G`; the device emits these
+blocks autonomously.
+
+**Impact (checked):** meta lines carry no sequence number and never enter the
+CSV data rows; capture.py routes them to the JSON sidecar `config_lines`, which
+therefore contains one full duplicate block per ~5 s (cosmetic only — field
+lookups unaffected). Bandwidth ~12 lines/5 s ≈ 1.5% of the stream. No effect on
+data integrity, parsing, estimator inputs or timing.
+
+**Known wart (documented, unfixed):** the replayed block includes stale boot
+state lines `status=waiting_host_g` / `status=stream_go`. Harmless for the
+current toolchain (nothing keys on these after session start), but a future
+host parser must not treat them as fresh session-control events — mid-stream,
+they are keepalive duplicates, not state changes. If that ever matters, the
+minimal fix is to split `s_meta` into "identity block" (replay) and "state
+events" (boot-only). No change made now per cost/working-code constraints.
