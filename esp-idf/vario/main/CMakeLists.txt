@@ -4,7 +4,8 @@ idf_component_register(
         "tx.c"
         "ms5611.c"
         "bmp581.c"
-        "mpu6050.c"
+        "lsm6dsv16x_reg.c"      # ST official platform-independent driver
+        "imu_lsm6dsv16x.c"      # our ESP-IDF i2c_master adapter
         "baro_proc.c"
         "estimators.c"
         "madgwick.c"

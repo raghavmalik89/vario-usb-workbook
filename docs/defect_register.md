@@ -223,3 +223,46 @@ Verification levels:
 - **Fault dataset:** `20261024_225226_idf_bmp581_bringup` retained.
 - **Note:** every BMP581 P frame carries its own fresh temperature (on-chip
   compensation) — the DEF-010 d2-seed boot step does not exist for this part.
+
+## DEF-017 — LSM6DSV16X residual I2C NACKs on IMU read path
+- **Status:** MITIGATED (retry + burst read); root cause suspected hardware
+- **Found:** 2026-10-25 (`20261025_121517_idf_lsm6dsv_bringup`)
+- **Component:** `esp-idf/vario/main/imu_lsm6dsv16x.c` (wrapper) — transactions NACKed by the sensor
+- **Detail:** ~70 E frames/s at first bring-up. Mitigations: bounded retry
+  (3 attempts, 2 ms spacing) + single 14-byte burst (0x20..0x2D) instead of 3
+  separate register-block reads → worst case cut 5× (2094→444 E/30 s, bringup3).
+  Residual ~15–27/s with ~2× run variance (444 vs 802 on identical config).
+  A 120 Hz ODR experiment made it *worse* (905/30 s, stale 11.7%), disproving
+  the conversion-collision model. Failure pattern (bursty NACKs, garbage WHO_AM_I
+  0x44 in one run, strong run-to-run variance) points at a marginal electrical
+  path on the hand-installed breakout (joints/pull-ups), not firmware.
+- **Impact:** I-stream drops to ~85–93 Hz (target 100); stale-reuse feeds the
+  last fresh sample so estimators never receive silently-corrupt IMU data;
+  E frames are telemetry noise for analysis scripts to ignore/filter.
+- **Action:** check SDA/SCL solder joints and pull-up placement on the breakout
+  when convenient; do not chase further in firmware.
+
+## DEF-018 — LSM6DSV16X intermittent init wedge after MCU reset
+- **Status:** MITIGATED (`i2c_master_bus_reset()` + full reconfigure); power-cycle is fallback
+- **Found:** 2026-10-25 (`20261025_122844/123018/123416/123522` bringup4/5/7/8)
+- **Component:** sensor I2C front-end state retained across MCU reset
+- **Detail:** ~50% of reset/boot cycles the sensor NACKs all init transactions
+  (sometimes returning garbage WHO_AM_I=0x44) and never recovers within the
+  session → `health_fail_halt`. Fix: on init failure, `i2c_master_bus_reset()`
+  (IDF SCL bit-bang recovery) + 20 ms + full reconfigure, then declare missing.
+  bringup9 booted with the recovery in place. An internally-wedged front-end
+  still requires a USB power-cycle.
+- **Operational note:** if a capture starts with `health_fail_halt`, power-cycle
+  the board (EN/RTS reset does not power-cycle the sensor rail).
+
+## DEF-019 — LSM6DSV16X CTRL1/2 readback in meta contradicts verified runtime config
+- **Status:** OPEN (cosmetic; readback untrusted)
+- **Found:** 2026-10-25 (all bringup captures)
+- **Component:** `imu_lsm6dsv16x.c` config readback latched into `#C` meta
+- **Detail:** meta reports ctrl1=0x07, ctrl2=0x07/0x00, ctrl3=0x44/0x00 across
+  runs, vs expected 0x78/0x78/0x44 for 240 Hz + ±8g/±500dps + BDU. Runtime
+  behavior proves the configuration landed (240 Hz fresh samples, 4096 LSB/g
+  scale confirmed by |a|=0.9989 g, gyro live). Register addresses verified
+  against the ST header. Readback path is unreliable — likely the same NACK
+  phenomenon (DEF-017) returning stale/shifted bytes during a deaf window.
+- **Impact:** none on data; do not use the ctrl meta fields as config evidence.

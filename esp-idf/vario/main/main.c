@@ -1,8 +1,8 @@
 /* main.c — vario-idf 0.1.0: bring-up, health check, streaming + estimation.
  *
  * Task layout (ESP32-S3, FreeRTOS):
- *   sens_task (core 1, prio 20): 5 ms base tick. Every tick: MPU6050 read
- *     (200 Hz) + attitude + fusion IMU path; async pipelined MS5611 slots:
+ *   sens_task (core 1, prio 20): 5 ms base tick. Every tick: LSM6DSV16X read
+ *     (240 Hz ODR, fresh-sample feed) + attitude + fusion IMU path; baro:
  *     ~48 Hz P + 10 Hz T (a T cycle displaces one P slot every 20 ticks).
  *     Baro samples are compensated (baro_proc.c), fed to the per-sid
  *     estimator bank, which drives the virtual-audio V frames.
@@ -31,7 +31,7 @@
 #include "estimators.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "mpu6050.h"
+#include "imu_lsm6dsv16x.h"
 #include "ms5611.h"
 #include "tx.h"
 
@@ -40,8 +40,7 @@ static const char *TAG = "vario";
 static i2c_master_bus_handle_t s_bus_a, s_bus_b;
 static ms5611_t s_baro_a, s_baro_b;   /* optional legacy baros (0/1 present) */
 static bmp581_t s_bmp;                /* BMP581 on bus B (2026-10-24 rig)  */
-static mpu6050_t s_mpu;
-static uint8_t s_mpu_addr;         /* probed at boot (0x69 or 0x68) */
+static lsm_imu_t s_imu;            /* LSM6DSV16X on bus A (2026-10-25 rig) */
 static baro_proc_t s_bp[2];
 static uint32_t s_d2[2];           /* latest temperature ADC per sid */
 static int s_t_seen[2];            /* first T frame received per sid */
@@ -212,35 +211,39 @@ static void sens_task(void *arg)
         t_prev_start = t_start;
         tick++;
 
-        /* ---- IMU every tick (200 Hz); stream I frames at 100 Hz ----
-         * (fusion paths still consume the full 200 Hz internally; the
-         * 100 Hz stream keeps the USB link under its measured ~20 KB/s
-         * drain ceiling — at 200 Hz text I-frames the ring saturates) */
+        /* ---- IMU: LSM6DSV16X at 240 Hz ODR; consumers fed on fresh
+         * samples only; I frames still streamed at 100 Hz (USB ceiling) -- */
         int64_t t_mpu0 = esp_timer_get_time();
         uint32_t c_mpu0 = bench_cycles();
         bench_section(2, (uint32_t)(t_mpu0 - t_start));
         int16_t raw[8];
+        static int16_t s_raw_prev[8];   /* last fresh sample (stale reuse) */
         int64_t t_i2c0 = esp_timer_get_time();
-        esp_err_t mpu_err = mpu6050_read(&s_mpu, raw);
+        bool fresh = false;
+        esp_err_t imu_err = lsm_imu_read(&s_imu, raw, &fresh);
         bench_i2c_call(2, (uint32_t)(esp_timer_get_time() - t_i2c0));
-        if (mpu_err == ESP_OK) {
+        if (imu_err == ESP_OK) {
+            if (fresh) memcpy(s_raw_prev, raw, sizeof(raw));
+            else       memcpy(raw, s_raw_prev, sizeof(raw));
             double t_s = (double)esp_timer_get_time() / 1e6;
             if ((tick % 2) == 0) {
                 tx_i((uint32_t)(t_s * 1e6),
                      raw[0], raw[1], raw[2], raw[4], raw[5], raw[6]);
             }
-            double a_m_s2[3], g_rad_s[3];
-            for (int i = 0; i < 3; i++) {
-                a_m_s2[i] = (double)raw[i] * 9.80665 / MPU_A_LSB_PER_G;
-                g_rad_s[i] = (double)raw[4 + i] / MPU_G_LSB_PER_DPS
-                             * (M_PI / 180.0);
+            if (fresh) {
+                double a_m_s2[3], g_rad_s[3];
+                for (int i = 0; i < 3; i++) {
+                    a_m_s2[i] = (double)raw[i] * 9.80665 / IMU_A_LSB_PER_G;
+                    g_rad_s[i] = (double)raw[4 + i] / IMU_G_LSB_PER_DPS
+                                 * (M_PI / 180.0);
+                }
+                attitude_feed(a_m_s2, g_rad_s, t_s);
+                bank_feed_imu(0, a_m_s2, t_s);
+                bank_feed_imu(1, a_m_s2, t_s);
             }
-            attitude_feed(a_m_s2, g_rad_s, t_s);
-            bank_feed_imu(0, a_m_s2, t_s);
-            bank_feed_imu(1, a_m_s2, t_s);
         } else {
             bench_i2c_err(2);
-            tx_e((uint32_t)esp_timer_get_time(), 1);
+            tx_e((uint32_t)esp_timer_get_time(), s_imu.last_err ? s_imu.last_err : 1);
         }
 
         /* ---- baro: async pipelined conversion slots (no busy-wait) ---- */
@@ -312,21 +315,26 @@ static void emit_boot_meta(void)
         }
     }
     snprintf(line, sizeof(line),
-             "#C,dev=imu,type=mpu6050,addr=0x%02x,whoami=0x68,status=%s",
-             s_mpu_addr, s_mpu.ok ? "ok" : "missing");
+             "#C,dev=imu,type=lsm6dsv16x,addr=0x%02x,whoami=0x%02x,"
+             "odr=240hz,a_fs=8g,g_fs=500dps,"
+             "ctrl1=0x%02x,ctrl2=0x%02x,ctrl3=0x%02x,ctrl6=0x%02x,"
+             "ctrl7=0x%02x,status=%s",
+             s_imu.addr, s_imu.whoami,
+             s_imu.ctrl1, s_imu.ctrl2, s_imu.ctrl3, s_imu.ctrl6, s_imu.ctrl7,
+             s_imu.ok ? "ok" : "missing");
     tx_meta(line);
     snprintf(line, sizeof(line),
              "#C,health=%s,baros=%d",
-             (s_n_baros >= 1 && s_mpu.ok) ? "ok" : "fail", s_n_baros);
+             (s_n_baros >= 1 && s_imu.ok) ? "ok" : "fail", s_n_baros);
     tx_meta(line);
     snprintf(line, sizeof(line),
-             "#C,rig=bmp581@B%s%s,i_hz=200,imu=on,est=on,"
-             "a_lsb_per_g=%d,g_lsb_per_dps=65.5,a_fs=8g,dlpf=44hz,"
+             "#C,rig=bmp581@B%s%s,i_hz=240(stream 100),imu=on,est=on,"
+             "a_lsb_per_g=%d,g_lsb_per_dps=65.5,a_fs=8g,flt=driver-default,"
              "tick_ms=%d,est_map=e0..e4=D01,C03,S4,S5,FUS@sid0%s,"
              "tone=%d+%dv,au=0.20/0.05",
              s_baro_type[1] == BARO_MS5611 ? "+ms5611" : "",
-             s_mpu.ok ? "" : "+imu_missing",
-             MPU_A_LSB_PER_G, TICK_MS,
+             s_imu.ok ? "" : "+imu_missing",
+             IMU_A_LSB_PER_G, TICK_MS,
              s_baro_type[1] != BARO_NONE ? ";e5..e9=sid1" : "",
              AU_TONE_BASE_HZ, AU_TONE_SLOPE_HZ);
     tx_meta(line);
@@ -387,8 +395,9 @@ void app_main(void)
     }
 
     /* ---- devices (failures leave the handle un-ok; meta reports it) ----
-     * 2026-10-24 rig: BMP581 on bus B (0x47 then 0x46), MPU6050 on bus A
-     * (0x69 then 0x68).  Legacy MS5611s are optional: probed on bus A then
+     * 2026-10-25 rig: BMP581 on bus B (0x47 then 0x46), LSM6DSV16X on bus A
+     * (0x6B then 0x6A, SA0-selectable).  Legacy MS5611s are optional: probed
+     * on bus A then
      * bus B (0x77 then 0x76).  BMP581 always takes sid0 (sensor under
      * test); any MS5611 fills the next sid(s).  0x7E on a bus scan is the
      * BMP581's own CMD register address ACKing probes — not a device. */
@@ -407,10 +416,10 @@ void app_main(void)
         if (i2c_master_probe(s_bus_b, a, pdMS_TO_TICKS(50)) == ESP_OK) {
             addr_bmp = a; break;
         }
-    uint8_t addr_mpu = 0;
-    for (uint8_t a = 0x69; a >= 0x68; a--)   /* 0x69, then 0x68 */
+    uint8_t addr_imu = 0;
+    for (uint8_t a = 0x6B; a >= 0x6A; a--)   /* 0x6B (SA0=GND), then 0x6A */
         if (i2c_master_probe(s_bus_a, a, pdMS_TO_TICKS(50)) == ESP_OK) {
-            addr_mpu = a; break;
+            addr_imu = a; break;
         }
 
     int sid = 0;
@@ -438,19 +447,18 @@ void app_main(void)
     }
     if (eb == ESP_ERR_NOT_FOUND && s_baro_type[1] == BARO_NONE)
         memset(&s_baro_b, 0, sizeof(s_baro_b));
-    esp_err_t em = addr_mpu
-        ? mpu6050_init(&s_mpu, s_bus_a, addr_mpu) : ESP_ERR_NOT_FOUND;
-    s_mpu_addr = addr_mpu;
+    esp_err_t em = addr_imu
+        ? lsm_imu_init(&s_imu, s_bus_a, addr_imu) : ESP_ERR_NOT_FOUND;
     s_n_baros = sid;
     if (ea != ESP_OK && addr_ms_a)
         ESP_LOGW(TAG, "ms5611 A init failed: %s", esp_err_to_name(ea));
     if (eb != ESP_OK && addr_ms_b)
         ESP_LOGW(TAG, "ms5611 B init failed: %s", esp_err_to_name(eb));
-    if (em != ESP_OK) ESP_LOGW(TAG, "mpu init failed: %s", esp_err_to_name(em));
+    if (em != ESP_OK) ESP_LOGW(TAG, "lsm6dsv16x init failed: %s", esp_err_to_name(em));
 
     emit_boot_meta();
 
-    if (!(s_n_baros >= 1 && s_mpu.ok)) {
+    if (!(s_n_baros >= 1 && s_imu.ok)) {
         tx_meta("#C,status=health_fail_halt");
         health_fail_loop();   /* does not return */
     }

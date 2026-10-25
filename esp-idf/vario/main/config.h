@@ -57,8 +57,8 @@
 #define BMP581_P_HZ      40
 
 /* ---- Streaming scales (declared in #C; offline tools read these) ---------- */
-#define MPU_A_LSB_PER_G     4096    /* +-8 g   */
-#define MPU_G_LSB_PER_DPS   65.5    /* +-500 dps */
+#define IMU_A_LSB_PER_G     4096    /* LSM6DSV16X +-8 g  = 0.244 mg/LSB  */
+#define IMU_G_LSB_PER_DPS   65.5    /* LSM6DSV16X +-500 dps (~65.536)    */
 
 /* ---- Estimator bank -------------------------------------------------------- *
  * One bank per barometer (sid). Each bank runs the competing architectures
