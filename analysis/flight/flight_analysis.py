@@ -167,16 +167,12 @@ def sg(x, win=81, poly=3):
     return np.convolve(xp, coef[::-1], mode='valid')
 
 dt_b = np.median(np.diff(t_b))
-v_ref_full = np.gradient(sg(z, 81), dt_b)
-# light extra smoothing for stable reference velocity
-v_ref_s = sg(v_ref_full, 41)
-# SG group delay is exactly (N-1)/2 samples per stage at DC: 40 + 20 = 60 samples
-# (1.5 s @ 40 Hz). Shift the reference EARLIER so it aligns with true motion,
-# otherwise all delay/overshoot/settling metrics are contaminated.
-SG_LAG = 60
-v_ref = np.empty_like(v_ref_s)
-v_ref[:-SG_LAG] = v_ref_s[SG_LAG:]
-v_ref[-SG_LAG:] = v_ref_s[-1]
+# NOTE (corrected): the SG coefficients are symmetric about the window center
+# (zero-phase centered filter), so the reference is ALREADY time-aligned.
+# A previous revision applied an erroneous SG_LAG=60 "group-delay correction"
+# that advanced the reference 1.5 s beyond truth and inflated every delay
+# metric by exactly that amount. No shift is applied.
+v_ref = sg(np.gradient(sg(z, 81), dt_b), 41)
 
 # ---------------- 4. metrics ----------------
 # quiet segments: |v_ref| < 0.15 sustained >= 5 s (a real flight rarely has

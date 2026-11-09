@@ -14,7 +14,7 @@ The flight recording is of **excellent integrity**: 761.65 s of device time, 30,
 Replaying the four frozen filters (C03, D01, S4, S5) on the recorded BMP581 pressure stream with real device timestamps shows:
 
 - **C03 verification passed decisively**: the bench Python C03 reproduces the device-recorded C03 to **3.3 mm/s RMS** (after excluding the first 5 s initialization). This validates both the Python reference implementations and the estimator-to-audio mapping used here.
-- All four filters track the flight well; the ranking differences are **matters of degree, not kind**. Effective tracking lag is ~2.1 s for all four on real thermal transitions (frozen configurations, 40 Hz input).
+- All four filters track the flight well; the ranking differences are **matters of degree, not kind**. Effective tracking lag is **0.57–0.70 s** on real thermal transitions (frozen configurations, 40 Hz input). (This revision corrects an erroneous 1.5 s reference-shift bug present in the first published version of the analysis — see §3.2; all delay-conflated metrics below are the corrected values.)
 - **S4/S5 are measurably quieter** than C03/D01 in the quiet segments found late in the flight (61 vs 72 mm/s RMS; p95 117 vs 143 mm/s) and produce **fewer audio episodes** (71/80 vs 93/96) with the same zero proxy-false-trigger count.
 - **C03/D01 have the best transient shape accuracy** after delay compensation (134 vs 199–215 mm/s fast-motion RMS error) and slightly lower overshoot.
 - **Recommendation for the next flight: run S4 as the airborne default** (quietest practical output, fewest audio episodes, lowest output jerk), keeping C03 as the verified reference implementation. This is a measured-evidence-based recommendation, not a default. See §8 for the trade-off argument and what would reverse it.
@@ -72,13 +72,13 @@ The sequence counters starting at 31709/15856 rather than 1 indicate a global, b
   - **S5** — Robust CV Kalman (light gate), frozen P4 parameters (`filters/stacked.py`)
 - Audio policy: ON at v > **+0.20 m/s**, OFF at v < **+0.05 m/s** (the current virtual-audio hysteresis), applied to each replayed output and to the recorded C03 V-values.
 
-### 3.2 Proxy reference and a methodological correction (important)
+### 3.2 Proxy reference — and a correction history (important)
 
-The pressure-derived reference velocity is a two-stage Savitzky–Golay filter (81-tap on altitude, gradient, 41-tap on velocity). A length-N symmetric SG filter has **exact group delay (N−1)/2 samples at DC**, i.e. **60 samples = 1.5 s** of pure delay that must be removed before the reference can be used for delay/overshoot/settling metrics. The first analysis pass (reference left delayed) produced self-canceling errors: apparent filter delay of −0.6 s and inflated overshoot/settling. After alignment, all metrics became physically coherent; this correction is baked into `flight_analysis.py` and documented here so the numbers are not misread against earlier bench passes.
+The pressure-derived reference velocity is a two-stage Savitzky–Golay filter (81-tap on altitude, gradient, 41-tap on velocity). **The SG coefficients are symmetric about the window center, so the filter is zero-phase and the reference is already time-aligned.** This matters because the first published version of this analysis applied an erroneous "SG group-delay correction" (`SG_LAG = 60` samples) that shifted the reference 1.5 s *beyond* truth — the (N−1)/2 delay rule holds for causal/trailing windows, not for a centered symmetric SG. The bug inflated every delay-conflated metric by exactly 1.5 s (filters appeared to lag ~2.1 s instead of the true ~0.6 s, confirmed by independent cross-correlation). This revision removes the shift; the corrected script carries a comment recording the mistake so it is not reintroduced. All numbers below are the corrected values; the shape-only metrics (delay-compensated overshoot/settling, delaycomp fast error) were essentially unaffected, as they should be.
 
-Two further metric-hygiene rules were applied:
+Two metric-hygiene rules were applied:
 
-1. **Delay and shape error are measured separately.** Raw xcorr delay on 46 detected transitions (|ref| > 0.5 m/s sustained ≥ 3 s) gives the effective tracking lag; overshoot and settling are then computed against a **delay-compensated** reference so they measure shape behavior, not the delay itself. Transitions whose xcorr peak fell on the window edge were rejected (0 of 46 rejected — all estimates are interior maxima).
+1. **Delay and shape error are measured separately.** Raw xcorr delay on 46 detected transitions (|ref| > 0.5 m/s sustained ≥ 3 s) gives the effective tracking lag; overshoot and settling are then computed against a **delay-compensated** reference so they measure shape behavior, not the delay itself. Transitions whose xcorr peak fell on the window edge were rejected (44 of 46 retained — 2 rejected).
 2. **Settling/overshoot windows are capped at the next transition start.** Thermalling transitions are often only 5–10 s apart; an 8 s settling window would otherwise integrate the *next* thermal burst. (This cap is why settling times below are believable rather than the pathological ~12 s an uncapped window produced during development.)
 
 ### 3.3 What cannot be evaluated
@@ -110,15 +110,15 @@ All values measured as described in §3.2. "Delay" is effective xcorr lag on rea
 
 | Metric | C03 | D01 | S4 | S5 |
 |---|---|---|---|---|
-| Quiet RMS (mm/s), 37 s coverage | 72.4 | 72.4 | **60.9** | **60.7** |
-| Quiet p95 \|v\| (mm/s) | 142.6 | 142.7 | **116.3** | 116.7 |
-| Transition delay median (s) | **2.10** | **2.10** | 2.20 | 2.12 |
-| Transition delay p75 (s) | 2.12 | 2.12 | 2.24 | 2.17 |
-| Overshoot median, delay-comp (m/s) | **0.264** | **0.266** | 0.330 | 0.361 |
-| Settling median, delay-comp (s) | **5.95** | **5.95** | 7.28 | 6.96 |
-| Fast-motion RMS error, raw (m/s, \|ref\|>1) | 1.333 | **1.332** | 1.387 | 1.367 |
-| Fast-motion RMS error, delay-comp (m/s) | **0.134** | **0.134** | 0.215 | 0.199 |
-| Fast-motion bias (mm/s) | −58.7 | −58.6 | −54.3 | −56.1 |
+| Quiet RMS (mm/s), 37 s coverage | 67.2 | 67.1 | **59.8** | **59.5** |
+| Quiet p95 \|v\| (mm/s) | 137.4 | 137.1 | **113.9** | 112.9 |
+| Transition delay median (s) | **0.600** | **0.575** | 0.700 | 0.625 |
+| Transition delay p75 (s) | 0.625 | 0.625 | 0.750 | 0.675 |
+| Overshoot median, delay-comp (m/s) | **0.277** | 0.290 | 0.349 | 0.361 |
+| Settling median, delay-comp (s) | **7.98** | 8.27 | 9.46 | 9.71 |
+| Fast-motion RMS error, raw (m/s, \|ref\|>1) | 0.642 | **0.640** | 0.732 | 0.703 |
+| Fast-motion RMS error, delay-comp (m/s) | **0.134** | 0.145 | 0.197 | 0.211 |
+| Fast-motion bias (mm/s) | 2.2 | 2.2 | −5.9 | −5.8 |
 | Output jerk RMS (m/s² per s) | 1.034 | 1.085 | **0.894** | 0.945 |
 | Audio episodes (+0.20/−0.05) | 93 | 96 | **71** | 80 |
 | Audio ON time (s) / duty | 278.5 / 36.6% | 278.8 / 36.6% | 279.7 / 36.7% | **273.5 / 35.9%** |
@@ -148,9 +148,9 @@ All figures in `reports/flight/` (also committed):
 ## 7. Findings and trade-offs
 
 1. **Quietness: S4/S5 win measurably.** ~16% lower RMS and ~18% lower p95 than C03/D01 in the 37 s of quiet segments. This is the largest robust difference in the study. (Caveat: quiet coverage is limited to the rollout; there is no long soaring-quiet stretch in this flight.)
-2. **Transient shape: C03/D01 win measurably.** 134 mm/s delay-compensated fast-motion RMS error vs 199–215 mm/s for S4/S5; lower overshoot; faster settling (5.9 s vs 7.0–7.3 s).
+2. **Transient shape: C03/D01 win measurably.** 134–145 mm/s delay-compensated fast-motion RMS error vs 197–211 mm/s for S4/S5; lower overshoot (0.28–0.29 vs 0.35–0.36 m/s); faster settling (8.0–8.3 s vs 9.5–9.7 s).
 3. **Chatter: S4 wins** — fewest episodes (71) and longest mean episode (3.9 s) at equal total ON-time; zero false triggers for all.
-4. **Delay: statistical tie.** ~2.1 s for all four (2.10 C03/D01, 2.12 S5, 2.20 S4). Responsiveness did not differentiate the field on this data.
+4. **Delay: small but real differentiation.** All four respond in ~0.6 s; C03/D01 are marginally faster (0.58–0.60 s) than S5 (0.63 s) and S4 (0.70 s). Responsiveness differences are proportionally larger than they first appear (S4 ~17% slower than D01), though in absolute terms all four are in the same responsiveness class.
 5. **Smoothness: S4 lowest jerk** (0.894 vs 1.03–1.09) — consistent with its gating architecture suppressing small-scale velocity jitter.
 6. C03 and D01 are nearly identical on every metric here, as expected from their shared q/r heritage — the practical field on this flight is {C03/D01} vs {S4, S5}.
 
@@ -162,12 +162,12 @@ All figures in `reports/flight/` (also committed):
 
 **Ranking for real-world paragliding use (this dataset):**
 
-1. **S4** — quietest-class noise, fewest audio episodes, lowest jerk, zero false triggers; acceptable (slightly worse) transient shape. Best overall pilot-experience metrics.
-2. **S5** — statistically tied with S4 on quietness, middling chatter (80 episodes), better fast-motion shape than S4 but worse than C03/D01.
+1. **S4** — quietest-class noise, fewest audio episodes, lowest jerk, zero false triggers; acceptable (slightly worse) transient shape and the slowest onset (0.70 s). Best overall pilot-experience metrics.
+2. **S5** — statistically tied with S4 on quietness, middling chatter (80 episodes), better fast-motion shape than S4 but worse than C03/D01; onset 0.63 s.
 3. **C03** — best transient fidelity and fastest settling; verified identical to device firmware; noticeably chattier audio and noisier quiet output.
 4. **D01** — same behavior as C03 within measurement noise, marginally higher jerk; no measured advantage over C03 on this data.
 
-**Recommended default for the next flight: S4**, with C03 remaining the verified reference. Rationale: on real flight data the differences that matter for pilot experience are quietness and chatter, both of which S4 leads, while its transient-shape disadvantage (0.33 vs 0.26 m/s median overshoot; 215 vs 134 mm/s delay-comp fast error) is a second-order effect against a 2.1 s common lag that dwarfs it. **What would reverse this recommendation:** a flight with long quiet soaring stretches (to confirm the quiet advantage generalizes beyond rollout) or GPS reference data showing S4's gating misses or delays weak-but-flyable lift onsets. Either result should be fed back before freezing anything — this remains a design-space investigation, not a selection.
+**Recommended default for the next flight: S4**, with C03 remaining the verified reference. Rationale: on real flight data the differences that matter most for pilot experience are quietness and chatter, both of which S4 leads; its costs are real but bounded — +0.1 s onset delay, +0.07 m/s median overshoot, +0.06–0.13 m/s delay-compensated fast-motion error. With the corrected ~0.6 s common lag, that trade is tighter than the first published revision suggested: a pilot prioritizing crisp lift onset over audio calm would rationally pick C03 instead, and both choices are defensible on this data. **What would reverse this recommendation:** a flight with long quiet soaring stretches (to confirm the quiet advantage generalizes beyond rollout) or GPS reference data showing S4's gating misses or delays weak-but-flyable lift onsets. Either result should be fed back before freezing anything — this remains a design-space investigation, not a selection.
 
 ---
 
